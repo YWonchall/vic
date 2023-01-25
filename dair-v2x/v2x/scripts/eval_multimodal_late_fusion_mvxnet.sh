@@ -1,5 +1,5 @@
 DATA="../data/DAIR-V2X/cooperative-vehicle-infrastructure"
-OUTPUT="../wokdir/output/vic-late-multimodal-mvxnet"
+OUTPUT="../work-dirs/output/vic-late-multimodal-mvxnet"
 rm -r $OUTPUT
 mkdir -p $OUTPUT/result
 mkdir -p $OUTPUT/inf/multimodal
@@ -7,7 +7,7 @@ mkdir -p $OUTPUT/veh/multimodal
 
 INFRA_MODEL_PATH="../configs/vic3d/late-fusion-multimodal/mvxnet"
 INFRA_CONFIG_NAME="trainval_config_i.py"
-INFRA_MODEL_NAME="sv3d_inf_mvxnet_c2271983b04b73e573486fcbc559c31e.pth"
+INFRA_MODEL_NAME="mvxnet.pth" #"sv3d_inf_mvxnet_c2271983b04b73e573486fcbc559c31e.pth"
 
 VEHICLE_MODEL_PATH="../configs/vic3d/late-fusion-multimodal/mvxnet"
 VEHICLE_CONFIG_NAME="trainval_config_v.py"
@@ -16,11 +16,11 @@ VEHICLE_MODEL_NAME="sv3d_veh_mvxnet_bf0e32c42649ee90e03f937214356dbf.pth"
 SPLIT_DATA_PATH="../data/split_datas/cooperative-split-data.json"
 
 # srun --gres=gpu:a100:1 --time=1-0:0:0 --job-name "dair-v2x" \
-CUDA_VISIBLE_DEVICES=$1
-FUSION_METHOD=$2
-DELAY_K=$3
-EXTEND_RANGE_START=$4
-EXTEND_RANGE_END=$5
+CUDA_VISIBLE_DEVICES=0 #$1
+FUSION_METHOD='late_fusion' #$2
+DELAY_K=2 #$3
+EXTEND_RANGE_START=0 #$4
+EXTEND_RANGE_END=100 #$5
 TIME_COMPENSATION=$6
 python eval.py \
   --input $DATA \

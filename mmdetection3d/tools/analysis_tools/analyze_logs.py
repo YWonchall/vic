@@ -45,6 +45,7 @@ def plot_curve(log_dicts, args):
     metrics = args.keys
 
     num_metrics = len(metrics)
+    print(num_metrics)
     for i, log_dict in enumerate(log_dicts):
         epochs = list(log_dict.keys())
         for j, metric in enumerate(metrics):

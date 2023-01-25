@@ -9,7 +9,8 @@ pip uninstall pycocotools -y
 mim install mmpycocotools
 cd pypcd
 python setup.py install
-# cd ..
+cd ..
+pip install seaborn
 # pip install vtk==8.1.2
 # pip install mayavi
 # apt-get update
