@@ -118,19 +118,21 @@ class DAIRV2XV(DAIRV2XDataset):
 
 # 1.2
 class VICDataset(DAIRV2XDataset):
-    def __init__(self, path, args, split="train", sensortype="lidar", extended_range=None):
+    # 1-3
+    def __init__(self, path, args, split="train", sensortype="lidar",inf_sensortype="lidar",veh_sensortype="lidar", extended_range=None):
         super().__init__(path + "/cooperative", args, split, extended_range)
         self.path = path
         # 1.3
+        # 1-4
         self.inf_path2info = build_path_to_info(
             "infrastructure-side",
             load_json(osp.join(path, "infrastructure-side/data_info.json")),
-            sensortype,
+            inf_sensortype,
         )
         self.veh_path2info = build_path_to_info(
             "vehicle-side",
             load_json(osp.join(path, "vehicle-side/data_info.json")),
-            sensortype,
+            veh_sensortype,
         )
 
         frame_pairs = load_json(osp.join(path, "cooperative/data_info.json"))
@@ -140,24 +142,42 @@ class VICDataset(DAIRV2XDataset):
         self.data = []
         self.inf_frames = {}
         self.veh_frames = {}
-
+        # 1-5
         for elem in frame_pairs:
             # 1.4
             # 获取此帧信息
-            if sensortype == "lidar":
+            if inf_sensortype == "lidar":
                 inf_frame = self.inf_path2info[elem["infrastructure_pointcloud_path"]]
-                veh_frame = self.veh_path2info[elem["vehicle_pointcloud_path"]]
-            elif sensortype == "camera":
+            elif inf_sensortype == "camera":
                 inf_frame = self.inf_path2info[elem["infrastructure_image_path"]]
-                veh_frame = self.veh_path2info[elem["vehicle_image_path"]]
-                # 1.5
                 get_annos(path, "infrastructure-side", inf_frame, "camera")
-                get_annos(path, "vehicle-side", veh_frame, "camera")
-            elif sensortype == "multimodal":
+            elif inf_sensortype == "multimodal":
                 inf_frame = self.inf_path2info[elem["infrastructure_pointcloud_path"]]
-                veh_frame = self.veh_path2info[elem["vehicle_pointcloud_path"]]
                 get_annos(path, "infrastructure-side", inf_frame, "camera")
+            
+            if veh_sensortype == "lidar":
+                veh_frame = self.veh_path2info[elem["vehicle_pointcloud_path"]]
+            elif veh_sensortype == "camera":
+                veh_frame = self.veh_path2info[elem["vehicle_image_path"]]
                 get_annos(path, "vehicle-side", veh_frame, "camera")
+            elif veh_sensortype == "multimodal":
+                veh_frame = self.veh_path2info[elem["vehicle_pointcloud_path"]]
+                get_annos(path, "vehicle-side", veh_frame, "camera")
+            
+            # if sensortype == "lidar":
+            #     inf_frame = self.inf_path2info[elem["infrastructure_pointcloud_path"]]
+            #     veh_frame = self.veh_path2info[elem["vehicle_pointcloud_path"]]
+            # elif sensortype == "camera":
+            #     inf_frame = self.inf_path2info[elem["infrastructure_image_path"]]
+            #     veh_frame = self.veh_path2info[elem["vehicle_image_path"]]
+            #     # 1.5
+            #     get_annos(path, "infrastructure-side", inf_frame, "camera")
+            #     get_annos(path, "vehicle-side", veh_frame, "camera")
+            # elif sensortype == "multimodal":
+            #     inf_frame = self.inf_path2info[elem["infrastructure_pointcloud_path"]]
+            #     veh_frame = self.veh_path2info[elem["vehicle_pointcloud_path"]]
+            #     get_annos(path, "infrastructure-side", inf_frame, "camera")
+            #     get_annos(path, "vehicle-side", veh_frame, "camera")
 
             inf_frame = InfFrame(path + "/infrastructure-side/", inf_frame)
             veh_frame = VehFrame(path + "/vehicle-side/", veh_frame)
@@ -224,8 +244,9 @@ class VICDataset(DAIRV2XDataset):
 
 
 class VICSyncDataset(VICDataset):
-    def __init__(self, path, args, split="train", sensortype="lidar", extended_range=None):
-        super().__init__(path, args, split, sensortype, extended_range)
+    # 1-2
+    def __init__(self, path, args, split="train", sensortype="lidar",inf_sensortype="lidar",veh_sensortype="lidar", extended_range=None):
+        super().__init__(path, args, split, sensortype, inf_sensortype, veh_sensortype, extended_range)
         logger.info("VIC-Sync {} dataset, overall {} frames".format(split, len(self.data)))
 
     def __getitem__(self, index):

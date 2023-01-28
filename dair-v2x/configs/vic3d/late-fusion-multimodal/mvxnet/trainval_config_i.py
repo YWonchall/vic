@@ -1,7 +1,8 @@
 dataset_type = "KittiDataset"
 # 1
 data_root = "/workspace/vic-competition/dair-v2x/data/DAIR-V2X/cooperative-vehicle-infrastructure/infrastructure-side"
-class_names = ["Pedestrian", "Cyclist", "Car"]
+###
+class_names = ["Car"]
 voxel_size = [0.05, 0.05, 0.1]
 point_cloud_range = [0, -40, -3, 70.4, 40, 1]
 z_center_pedestrian = -0.6
@@ -29,7 +30,7 @@ dist_params = dict(backend="nccl")
 log_level = "INFO"
 # 5
 #work_dir = "/workspace/vic-competition/mmdetection3d/work-dirs/exam-c/inf/train/"       
-load_from = "https://download.openmmlab.com/mmdetection3d/pretrain_models/mvx_faster_rcnn_detectron2-caffe_20e_coco-pretrain_gt-sample_kitti-3-class_moderate-79.3_20200207-a4a6a3c7.pth"
+load_from = None#"https://download.openmmlab.com/mmdetection3d/pretrain_models/mvx_faster_rcnn_detectron2-caffe_20e_coco-pretrain_gt-sample_kitti-3-class_moderate-79.3_20200207-a4a6a3c7.pth"
 resume_from = None #"/workspace/vic-competition/mmdetection3d/work-dirs/vic/inf/train/latest.pth"
 workflow = [("train", 1)]
 
@@ -77,7 +78,8 @@ model = dict(
     pts_neck=dict(type="SECONDFPN", in_channels=[128, 256], upsample_strides=[1, 2], out_channels=[256, 256]),
     pts_bbox_head=dict(
         type="Anchor3DHead",
-        num_classes=3,
+        ###
+        num_classes=1,
         in_channels=512,
         feat_channels=512,
         use_direction_classifier=True,

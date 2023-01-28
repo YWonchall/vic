@@ -71,17 +71,18 @@ class LateFusionInf(nn.Module):
 
     def pred(self, frame, trans, pred_filter):
         # 2.4
-        if self.args.sensortype == "lidar":
+        # 2-4
+        if self.args.inf_sensortype == "lidar":
             id = frame.id["lidar"]
             logger.debug("infrastructure pointcloud_id: {}".format(id))
             path = osp.join(self.args.output, "inf", "lidar", id + ".pkl")
             frame_timestamp = frame["pointcloud_timestamp"]
-        elif self.args.sensortype == "camera":
+        elif self.args.inf_sensortype == "camera":
             id = frame.id["camera"]
             logger.debug("infrastructure image_id: {}".format(id))
             path = osp.join(self.args.output, "inf", "camera", id + ".pkl")
             frame_timestamp = frame["image_timestamp"]
-        elif self.args.sensortype == "multimodal":
+        elif self.args.inf_sensortype == "multimodal":
             id = frame.id["lidar"]
             logger.debug("infrastructure pointcloud_id: {}".format(id))
             path = osp.join(self.args.output, "inf", "multimodal", id + ".pkl")
@@ -95,14 +96,15 @@ class LateFusionInf(nn.Module):
         if self.model is None:
             raise Exception
         # 2.5
-        if self.args.sensortype == "lidar":
+        # 2-5
+        if self.args.inf_sensortype == "lidar":
             tmp = frame.point_cloud(data_format="file")
             result, _ = inference_detector(self.model, tmp)
-        elif self.args.sensortype == "camera":
+        elif self.args.inf_sensortype == "camera":
             tmp = osp.join(self.args.input, "infrastructure-side", frame["image_path"])
             annos = osp.join(self.args.input, "infrastructure-side", "annos", id + ".json")
             result, _ = inference_mono_3d_detector(self.model, tmp, annos)
-        elif self.args.sensortype == "multimodal":
+        elif self.args.inf_sensortype == "multimodal":
             pcd_tmp = frame.point_cloud(data_format="file")
             img_tmp = osp.join(self.args.input, "infrastructure-side", frame["image_path"])
             annos = osp.join(self.args.input, "infrastructure-side", "annos", id + ".json")
@@ -127,7 +129,7 @@ class LateFusionInf(nn.Module):
 
         # hard code by yuhb
         # TODO: new camera model
-        if self.args.sensortype == "camera":
+        if self.args.inf_sensortype == "camera":
             for ii in range(len(result[0]["labels_3d"])):
                 result[0]["labels_3d"][ii] = 2
 
@@ -144,11 +146,11 @@ class LateFusionInf(nn.Module):
             result[0]["labels_3d"] = np.zeros((1))
             result[0]["scores_3d"] = np.zeros((1))
 
-        if self.args.sensortype == "lidar" and self.args.save_point_cloud:
+        if self.args.inf_sensortype == "lidar" and self.args.save_point_cloud:
             save_data = trans(frame.point_cloud(format="array"))
-        elif self.args.sensortype == "camera" and self.args.save_image:
+        elif self.args.inf_sensortype == "camera" and self.args.save_image:
             save_data = frame.image(data_format="array")
-        elif self.args.sensortype == "multimodal" and self.args.save_multimodal:
+        elif self.args.inf_sensortype == "multimodal" and self.args.save_multimodal:
             save_data = trans(frame.point_cloud(format="array"))
             # save_image = frame.image(data_format="array")
             # save_data = [save_point_cloud, save_image]
@@ -181,13 +183,14 @@ class LateFusionInf(nn.Module):
                 device=self.args.device,
             )
             # 2.4
+            # 2-3
             pred_dict, id = self.pred(data, trans, pred_filter)
         self.pipe.send("boxes", pred_dict["boxes_3d"])
         self.pipe.send("score", pred_dict["scores_3d"])
         self.pipe.send("label", pred_dict["labels_3d"])
 
         if prev_inf_frame_func is not None:
-            prev_frame, delta_t = prev_inf_frame_func(id, sensortype=self.args.sensortype)
+            prev_frame, delta_t = prev_inf_frame_func(id, sensortype=self.args.inf_sensortype)
             if prev_frame is not None:
                 prev_frame_trans = prev_frame.transform(from_coord="Infrastructure_lidar", to_coord="Vehicle_lidar")
                 prev_frame_trans.veh_name = trans.veh_name
@@ -225,17 +228,17 @@ class LateFusionVeh(nn.Module):
         self.args = args
 
     def pred(self, frame, trans, pred_filter):
-        if self.args.sensortype == "lidar":
+        if self.args.veh_sensortype == "lidar":
             id = frame.id["lidar"]
             logger.debug("vehicle pointcloud_id: {}".format(id))
             path = osp.join(self.args.output, "veh", "lidar", id + ".pkl")
             frame_timestamp = frame["pointcloud_timestamp"]
-        elif self.args.sensortype == "camera":
+        elif self.args.veh_sensortype == "camera":
             id = frame.id["camera"]
             logger.debug("vehicle image_id: {}".format(id))
             path = osp.join(self.args.output, "veh", "camera", id + ".pkl")
             frame_timestamp = frame["image_timestamp"]
-        elif self.args.sensortype == "multimodal":
+        elif self.args.veh_sensortype == "multimodal":
             id = frame.id["lidar"]
             logger.debug("vehicle pointcloud_id: {}".format(id))
             path = osp.join(self.args.output, "veh", "multimodal", id + ".pkl")
@@ -249,14 +252,14 @@ class LateFusionVeh(nn.Module):
         if self.model is None:
             raise Exception
 
-        if self.args.sensortype == "lidar":
+        if self.args.veh_sensortype == "lidar":
             tmp = frame.point_cloud(data_format="file")
             result, _ = inference_detector(self.model, tmp)
-        elif self.args.sensortype == "camera":
+        elif self.args.veh_sensortype == "camera":
             tmp = osp.join(self.args.input, "vehicle-side", frame["image_path"])
             annos = osp.join(self.args.input, "vehicle-side", "annos", id + ".json")
             result, _ = inference_mono_3d_detector(self.model, tmp, annos)
-        elif self.args.sensortype == "multimodal":
+        elif self.args.veh_sensortype == "multimodal":
             pcd_tmp = frame.point_cloud(data_format="file")
             img_tmp = osp.join(self.args.input, "vehicle-side", frame["image_path"])
             annos = osp.join(self.args.input, "vehicle-side", "annos", id + ".json")
@@ -281,7 +284,7 @@ class LateFusionVeh(nn.Module):
 
         # hard code by yuhb
         # TODO: new camera model
-        if self.args.sensortype == "camera":
+        if self.args.veh_sensortype == "camera":
             for ii in range(len(result[0]["labels_3d"])):
                 result[0]["labels_3d"][ii] = 2
 
@@ -298,11 +301,11 @@ class LateFusionVeh(nn.Module):
             result[0]["labels_3d"] = np.zeros((1))
             result[0]["scores_3d"] = np.zeros((1))
 
-        if self.args.sensortype == "lidar" and self.args.save_point_cloud:
+        if self.args.veh_sensortype == "lidar" and self.args.save_point_cloud:
             save_data = trans(frame.point_cloud(format="array"))
-        elif self.args.sensortype == "camera" and self.args.save_image:
+        elif self.args.veh_sensortype == "camera" and self.args.save_image:
             save_data = frame.image(data_format="array")
-        elif self.args.sensortype == "multimodal" and self.args.save_multimodal:
+        elif self.args.veh_sensortype == "multimodal" and self.args.save_multimodal:
             save_data = trans(frame.point_cloud(format="array"))
             # save_image = frame.image(data_format="array")
             # save_data = [save_point_cloud, save_image]
@@ -364,6 +367,7 @@ class LateFusion(BaseModel):
 
     def forward(self, vic_frame, filt, prev_inf_frame_func=None, *args):
         # 2.2
+        # 2-2
         id_inf = self.inf_model(
             vic_frame.infrastructure_frame(),
             vic_frame.transform(from_coord="Infrastructure_lidar", to_coord="Vehicle_lidar"),

@@ -1,17 +1,19 @@
 DATA="../data/DAIR-V2X/cooperative-vehicle-infrastructure"
-OUTPUT="../work-dirs/output/vic-late-multimodal-mvxnet"
+# 1
+OUTPUT="../work-dirs/output/vic-late-custom-pointpillars-pointpillars"
 rm -r $OUTPUT
 mkdir -p $OUTPUT/result
-mkdir -p $OUTPUT/inf/multimodal
-mkdir -p $OUTPUT/veh/multimodal
-
-INFRA_MODEL_PATH="../configs/vic3d/late-fusion-multimodal/mvxnet"
+# 2
+mkdir -p $OUTPUT/inf/lidar
+mkdir -p $OUTPUT/veh/lidar
+# 3
+INFRA_MODEL_PATH="../configs/vic3d/late-fusion-pointcloud/pointpillars"
 INFRA_CONFIG_NAME="trainval_config_i.py"
-INFRA_MODEL_NAME="mvxnet_inf_my.pth" #"sv3d_inf_mvxnet_c2271983b04b73e573486fcbc559c31e.pth"
-
-VEHICLE_MODEL_PATH="../configs/vic3d/late-fusion-multimodal/mvxnet"
-VEHICLE_CONFIG_NAME="trainval_config_v.py"
-VEHICLE_MODEL_NAME="mvxnet_veh_my.pth"
+INFRA_MODEL_NAME="pointpillars_inf_my.pth" #"sv3d_inf_mvxnet_c2271983b04b73e573486fcbc559c31e.pth"
+# 4
+VEHICLE_MODEL_PATH="../configs/vic3d/late-fusion-pointcloud/pointpillars"
+VEHICLE_CONFIG_NAME="trainval_config_v_car.py"
+VEHICLE_MODEL_NAME="pointpillars_veh_my_car.pth"
 
 SPLIT_DATA_PATH="../data/split_datas/cooperative-split-data.json"
 
@@ -22,6 +24,7 @@ DELAY_K=2 #$3
 EXTEND_RANGE_START=0 #$4
 EXTEND_RANGE_END=100 #$5
 TIME_COMPENSATION=$6
+# 5.sensortype
 python eval.py \
   --input $DATA \
   --output $OUTPUT \
@@ -37,6 +40,8 @@ python eval.py \
   --device ${CUDA_VISIBLE_DEVICES} \
   --pred-class car \
   --sensortype multimodal \
+  --inf-sensortype lidar \
+  --veh-sensortype lidar \
   --extended-range $EXTEND_RANGE_START -39.68 -3 $EXTEND_RANGE_END 39.68 1 \
   --overwrite-cache \
   $TIME_COMPENSATION

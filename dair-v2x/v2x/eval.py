@@ -86,11 +86,14 @@ if __name__ == "__main__":
     extended_range = range2box(np.array(args.extended_range))
     logger.info("loading dataset")
     # 1.1
+    # 1-1
     dataset = SUPPROTED_DATASETS[args.dataset](
         args.input,
         args,
         split=args.split,
         sensortype=args.sensortype,
+        inf_sensortype=args.inf_sensortype,
+        veh_sensortype=args.veh_sensortype,
         extended_range=extended_range,
     )
     
@@ -105,5 +108,6 @@ if __name__ == "__main__":
     else:
         pipe = Channel()
         # 融合相关代码
+        # 2-1
         model = SUPPROTED_MODELS[args.model](args, pipe)
         eval_vic(args, dataset, model, evaluator)

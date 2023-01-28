@@ -4,6 +4,29 @@ import io as sysio
 import numba
 import numpy as np
 
+CLASS_NAMES = ['car', 'pedestrian', 'cyclist', 'van', 'person_sitting','trafficcone']
+class_to_name = {
+    0: 'Car',
+    1: 'Pedestrian',
+    2: 'Cyclist',
+    3: 'Van',
+    4: 'Person_sitting',
+    5: 'Trafficcone',
+}
+class_to_range = {
+    0: [0.5, 0.95, 10],
+    1: [0.25, 0.7, 10],
+    2: [0.25, 0.7, 10],
+    3: [0.5, 0.95, 10],
+    4: [0.25, 0.7, 10],
+    5: [0.25, 0.7, 10],
+}
+overlap_0_7 = np.array([[0.7, 0.5, 0.5, 0.7,0.5,0.5],
+                        [0.7, 0.5, 0.5, 0.7, 0.5,0.5],
+                        [0.7, 0.5, 0.5, 0.7, 0.5,0.5]])
+overlap_0_5 = np.array([[0.5, 0.5, 0.5, 0.5, 0.5,0.5],
+                        [0.5, 0.25, 0.25, 0.5, 0.25,0.25],
+                        [0.5, 0.25, 0.25, 0.5, 0.25,0.25]])
 
 @numba.jit
 def get_thresholds(scores: np.ndarray, num_gt, num_sample_pts=41):
@@ -27,7 +50,7 @@ def get_thresholds(scores: np.ndarray, num_gt, num_sample_pts=41):
 
 
 def clean_data(gt_anno, dt_anno, current_class, difficulty):
-    CLASS_NAMES = ['car', 'pedestrian', 'cyclist']
+    # CLASS_NAMES = ['car', 'pedestrian', 'cyclist']
     MIN_HEIGHT = [40, 25, 25]
     MAX_OCCLUSION = [0, 1, 2]
     MAX_TRUNCATION = [0.15, 0.3, 0.5]
@@ -660,20 +683,15 @@ def kitti_eval(gt_annos,
     assert len(eval_types) > 0, 'must contain at least one evaluation type'
     if 'aos' in eval_types:
         assert 'bbox' in eval_types, 'must evaluate bbox when evaluating aos'
-    overlap_0_7 = np.array([[0.7, 0.5, 0.5, 0.7,
-                             0.5], [0.7, 0.5, 0.5, 0.7, 0.5],
-                            [0.7, 0.5, 0.5, 0.7, 0.5]])
-    overlap_0_5 = np.array([[0.7, 0.5, 0.5, 0.7, 0.5],
-                            [0.5, 0.25, 0.25, 0.5, 0.25],
-                            [0.5, 0.25, 0.25, 0.5, 0.25]])
+    
     min_overlaps = np.stack([overlap_0_7, overlap_0_5], axis=0)  # [2, 3, 5]
-    class_to_name = {
-        0: 'Car',
-        1: 'Pedestrian',
-        2: 'Cyclist',
-        3: 'Van',
-        4: 'Person_sitting',
-    }
+    # class_to_name = {
+    #     0: 'Car',
+    #     1: 'Pedestrian',
+    #     2: 'Cyclist',
+    #     3: 'Van',
+    #     4: 'Person_sitting',
+    # }
     name_to_class = {v: n for n, v in class_to_name.items()}
     if not isinstance(current_classes, (list, tuple)):
         current_classes = [current_classes]
@@ -786,20 +804,7 @@ def kitti_eval_coco_style(gt_annos, dt_annos, current_classes):
     Returns:
         string: Evaluation results.
     """
-    class_to_name = {
-        0: 'Car',
-        1: 'Pedestrian',
-        2: 'Cyclist',
-        3: 'Van',
-        4: 'Person_sitting',
-    }
-    class_to_range = {
-        0: [0.5, 0.95, 10],
-        1: [0.25, 0.7, 10],
-        2: [0.25, 0.7, 10],
-        3: [0.5, 0.95, 10],
-        4: [0.25, 0.7, 10],
-    }
+    
     name_to_class = {v: n for n, v in class_to_name.items()}
     if not isinstance(current_classes, (list, tuple)):
         current_classes = [current_classes]

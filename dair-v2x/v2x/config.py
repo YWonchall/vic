@@ -18,13 +18,14 @@ name2id = {
     "unknown_unmovable": 3,
     "unknown_movable": 3,
 }
-
+# 3
 superclass = {
     -1: "ignore",
     0: "pedestrian",
     1: "cyclist",
     2: "car",
-    3: "ignore",
+    3: "Trafficcone",
+    4: "ignore",
 }
 
 
@@ -39,7 +40,7 @@ def add_arguments(parser):
     parser.add_argument("--dataset", type=str, default="vic-sync")
     parser.add_argument("--k", type=int, default=0)
     parser.add_argument("--pred-classes", nargs="+", default=["car"])
-    parser.add_argument("--model", type=str, default="single_veh")
+    parser.add_argument("--model", type=str, default="veh_only")
     parser.add_argument("--device", type=int, default=0)
     parser.add_argument("--debug", action="store_true")
     parser.add_argument("--quiet", action="store_true")
@@ -48,4 +49,6 @@ def add_arguments(parser):
     parser.add_argument("--save-multimodal", action="store_true")
     parser.add_argument("--extended-range", type=float, nargs="+", default=[-10, -49.68, -3, 79.12, 49.68, 1])
     parser.add_argument("--sensortype", type=str, default="lidar")
+    parser.add_argument("--inf-sensortype", type=str, default="lidar")
+    parser.add_argument("--veh-sensortype", type=str, default="lidar")
     parser.add_argument("--eval-single", action="store_true")

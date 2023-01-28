@@ -1,5 +1,5 @@
 dataset_type = "KittiDataset"
-data_root = "/workspace/dair-v2x/data/DAIR-V2X/cooperative-vehicle-infrastructure/vehicle-side/"
+data_root = "/workspace/vic-competition/dair-v2x/data/DAIR-V2X/cooperative-vehicle-infrastructure/vehicle-side/"
 class_names = ["Pedestrian", "Cyclist", "Car"]
 # point_cloud_range = [0, -39.68, -3, 69.12, 39.68, 1]
 point_cloud_range = [0, -39.68, -3, 92.16, 39.68, 1]
@@ -11,7 +11,7 @@ z_center_pedestrian = -0.6
 z_center_cyclist = -0.6
 z_center_car = -1.78
 
-work_dir = "./work_dirs/vic3d_latefusion_veh_pointpillars"
+# work_dir = "./work_dirs/vic3d_latefusion_veh_pointpillars"
 
 model = dict(
     type="VoxelNet",
@@ -296,17 +296,17 @@ evaluation = dict(
     ],
 )
 
-lr = 0.001
-optimizer = dict(type="AdamW", lr=0.001, betas=(0.95, 0.99), weight_decay=0.01)
+lr = 3e-4
+optimizer = dict(type="AdamW", lr=lr, betas=(0.95, 0.99), weight_decay=0.01)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
-lr_config = dict(policy="cyclic", target_ratio=(10, 0.0001), cyclic_times=1, step_ratio_up=0.4)
-momentum_config = dict(policy="cyclic", target_ratio=(0.8947368421052632, 1), cyclic_times=1, step_ratio_up=0.4)
-runner = dict(type="EpochBasedRunner", max_epochs=20)
-checkpoint_config = dict(interval=10)
+lr_config = dict(policy="step", step=[1,2], warmup=None, warmup_iters=1000, warmup_ratio=0.1)
+momentum_config = None
+runner = dict(type="EpochBasedRunner", max_epochs=3)
+checkpoint_config = dict(interval=1)
 log_config = dict(interval=50, hooks=[dict(type="TextLoggerHook"), dict(type="TensorboardLoggerHook")])
 dist_params = dict(backend="nccl")
 log_level = "INFO"
-load_from = None
+load_from = "/workspace/vic-competition/dair-v2x/configs/vic3d/late-fusion-pointcloud/pointpillars/vic3d_latefusion_veh_pointpillars_a70fa05506bf3075583454f58b28177f.pth"
 resume_from = None
 workflow = [("train", 1)]
 gpu_ids = range(0, 1)

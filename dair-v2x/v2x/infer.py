@@ -58,7 +58,7 @@ def eval_vic(args, dataset, model, evaluator):
         pred.pop('inf_id')
         pred.pop('veh_id')
         pred.pop('inf_boxes')
-        pred['ab_cost'] = 0
+        pred['ab_cost'] = pipe.average_bytes()
         # save_pkl(pred, osp.join(args.output, "result", pred["veh_id"] + ".pkl"))
         with open(outfile,'w') as f:
             json.dump(pred,f,cls=NumpyEncoder)
@@ -107,6 +107,8 @@ if __name__ == "__main__":
         args,
         split=args.split,
         sensortype=args.sensortype,
+        inf_sensortype=args.inf_sensortype,
+        veh_sensortype=args.veh_sensortype,
         extended_range=extended_range,
     )
     logger.info("loading evaluator")
