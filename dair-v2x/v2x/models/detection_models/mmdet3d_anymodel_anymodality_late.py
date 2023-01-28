@@ -16,6 +16,7 @@ from model_utils import (
     SpaceCompensator,
     TimeCompensator,
     BasicFuser,
+    MLPFuser,
 )
 from dataset.dataset_utils import (
     load_json,
@@ -407,14 +408,22 @@ class LateFusion(BaseModel):
                 logger.debug("time compensation: {}".format(offset))
             else:
                 print("no previous frame found, time compensation is skipped")
-
+        
+        # Q1, match
         matcher = EuclidianMatcher(diff_label_filt)
+        # ind_inf: 路端bbox索引
+        # ind_veh: 路端bbox的对应框在车端的索引
+
         ind_inf, ind_veh, cost = matcher.match(pred_inf, pred_veh)
         logger.debug("matched boxes: {}, {}".format(ind_inf, ind_veh))
-
-        fuser = BasicFuser(perspective="vehicle", trust_type="main", retain_type="all")
-        result = fuser.fuse(pred_inf, pred_veh, ind_inf, ind_veh)
+        # Q2, fuse
+        # 一
+        fuser = MLPFuser(perspective="vehicle", trust_type="main", retain_type="all")
+        result,preds = fuser.save_data(pred_inf, pred_veh, ind_inf, ind_veh)
+        # fuser = BasicFuser(perspective="vehicle", trust_type="max", retain_type="all")
+        # result = fuser.fuse(pred_inf, pred_veh, ind_inf, ind_veh)
         result["inf_id"] = id_inf
         result["veh_id"] = id_veh
         result["inf_boxes"] = pred_inf.boxes
-        return result
+        # 二
+        return result,preds

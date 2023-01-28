@@ -1,11 +1,11 @@
 import numpy as np
+import pandas as pd
 import pickle
 from scipy.optimize import linear_sum_assignment
 from sklearn.linear_model import LinearRegression
 
 inf = 1e42  # infinity
-
-
+# 八点转中心点+lwh
 def box2info(boxes):
     num_boxes = boxes.shape[0]
     center = np.mean(boxes, axis=1)
@@ -40,6 +40,9 @@ class BBoxList(object):
         class_score: numpy array [num_boxes, num_classes], predicted probability of each class
         t: float, timestamp
         """
+        # boxes: [N, 8, 3]
+        # label: N
+        # score: N
         self.num_boxes = boxes.shape[0]
         self.num_dims = boxes.shape[2]
         self.num_classes = class_score.shape[1] if class_score is not None else None
@@ -146,16 +149,23 @@ class EuclidianMatcher(Matcher):
         self.delta = [delta_x, delta_y, delta_z]
 
     def match(self, frame1, frame2):
+        # 两端各bbox中心点的欧式距离
         cost_matrix = np.zeros((frame1.num_boxes, frame2.num_boxes))
         for i in range(frame1.num_boxes):
             for j in range(frame2.num_boxes):
                 cost_matrix[i][j] = np.sum((frame1.center[i] + self.delta - frame2.center[j]) ** 2) ** 0.5
                 if self.filter_func is not None and not self.filter_func(frame1, frame2, i, j):
+                    # 非同一个目标(label,relative distance)的距离代价设置为1e6
                     cost_matrix[i][j] = 1e6
-        # print(cost_matrix, linear_sum_assignment(cost_matrix))
+        # 给每一个车端的bbox分配一个路端的bbox
+        # 取二者间的最小者，多余的不分配
+        # index1 不连续，未分配的丢弃
+        # 有可能将1e6分配进去，此时可能出现不同类分配到一起，下边进行过滤
         index1, index2 = linear_sum_assignment(cost_matrix)
         accepted = []
         cost = 0
+        # 分配完后过滤掉 非同一个目标(label,relative distance)的bbox
+        # 此时匹配成功者均为同一目标且距离小于阈值
         for i in range(len(index1)):
             if cost_matrix[index1[i]][index2[i]] < 1e5:
                 accepted.append(i)
@@ -287,22 +297,30 @@ class BasicFuser(object):
 
         confidence1 = np.array(frame1.confidence[ind1])
         confidence2 = np.array(frame2.confidence[ind2])
+        # max: 取二者最大
+        # main: 采用主端
         if self.trust_type == "max":
             confidence1 = confidence1 > confidence2
             confidence2 = 1 - confidence1
         elif self.trust_type == "main":
             confidence1 = np.ones_like(confidence1)
             confidence2 = 1 - confidence1
-
+        # TODO
+        # 使用confidence作为权重来计算中心点
+        # 此权重仅取1,0
         center = frame1.center[ind1] * np.repeat(confidence1[:, np.newaxis], 3, axis=1) + frame2.center[
             ind2
         ] * np.repeat(confidence2[:, np.newaxis], 3, axis=1)
+        # 中心点移动，八个定点做出相同的移动
+        # 仅仅融合了中心
         boxes = (
             frame1.boxes[ind1]
             + np.repeat(center[:, np.newaxis, :], 8, axis=1)
             - np.repeat(frame1.center[ind1][:, np.newaxis, :], 8, axis=1)
         )
+        # 匹配成功(ind1)的bbox在车路端的label均相同
         label = frame1.label[ind1]
+        # 置信度取值和上述相同
         confidence = frame1.confidence[ind1] * confidence1 + frame2.confidence[ind2] * confidence2
         # arrows = frame1.arrows[ind1]
 
@@ -310,6 +328,7 @@ class BasicFuser(object):
         label_u = []
         confidence_u = []
         # arrows_u = []
+        # 保留车端被丢弃的bboox
         if self.retain_type in ["all", "main"]:
             for i in range(frame1.num_boxes):
                 if i not in ind1 and frame1.label[i] != -1:
@@ -317,7 +336,187 @@ class BasicFuser(object):
                     label_u.append(frame1.label[i])
                     confidence_u.append(frame1.confidence[i])
                     # arrows_u.append(frame1.arrows[i])
+        # 保留路端被丢弃的bbox，但置信度*0.4
+        if self.retain_type in ["all"]:
+            for i in range(frame2.num_boxes):
+                if i not in ind2 and frame2.label[i] != -1:
+                    boxes_u.append(frame2.boxes[i])
+                    label_u.append(frame2.label[i])
+                    confidence_u.append(frame2.confidence[i] * 0.4)
+                    # arrows_u.append(frame2.arrows[i])
+        if len(boxes_u) == 0:
+            result_dict = {
+                "boxes_3d": boxes,
+                # "arrows": arrows,
+                "labels_3d": label,
+                "scores_3d": confidence,
+            }
+        else:
+            result_dict = {
+                "boxes_3d": np.concatenate((boxes, np.array(boxes_u)), axis=0),
+                # "arrows": np.concatenate((arrows, np.array(arrows_u)), axis=0),
+                "labels_3d": np.concatenate((label, np.array(label_u)), axis=0),
+                "scores_3d": np.concatenate((confidence, np.array(confidence_u)), axis=0),
+            }
+        return result_dict
 
+
+class MLPFuser(object):
+    def __init__(self, perspective, trust_type, retain_type):
+        # perspective:
+        # infrastructure / vehicle
+        # trust type:
+        # lc (Linear Combination) / max
+        # retain type:
+        # all / main / none
+        self.perspective = perspective
+        self.trust_type = trust_type
+        self.retain_type = retain_type
+    def save_data(self, frame_r, frame_v, ind_r, ind_v):
+        if self.perspective == "infrastructure":
+            frame1 = frame_r
+            frame2 = frame_v
+            ind1 = ind_r
+            ind2 = ind_v
+        elif self.perspective == "vehicle":
+            frame1 = frame_v
+            frame2 = frame_r
+            ind1 = ind_v
+            ind2 = ind_r
+        
+        confidence1 = np.array(frame1.confidence[ind1])
+        confidence2 = np.array(frame2.confidence[ind2])
+        
+        bbox1 = frame1.boxes[ind1]
+        bbox2 = frame2.boxes[ind2]
+        #all_bbox = np.concatenate((bbox1.reshape(bbox1.shape[0],-1), bbox2.reshape(bbox2.shape[0],-1)),axis=1)
+        # {'boxes_3d': Array[N, 8, 3], 'labels_3d': Array[N], 'scores_3d': Array[N]}
+        pred_dict = {
+            'boxes_3d': frame1.boxes[ind1],
+            'inf_pred': frame2.boxes[ind2],
+            'labels_3d': frame1.label[ind1],
+            'scores_3d': frame1.confidence[ind1],
+            'inf_scores': frame2.confidence[ind2]
+            # 'id': np.arange(len(frame1.label[ind1]))
+        }
+        #pd.DataFrame(all_bbox).to_csv(f'/workspace/bboxes.csv',index=False)
+        
+        
+        if self.trust_type == "max":
+            confidence1 = confidence1 > confidence2
+            confidence2 = 1 - confidence1
+        elif self.trust_type == "main":
+            confidence1 = np.ones_like(confidence1)
+            confidence2 = 1 - confidence1
+        # TODO
+        # 使用confidence作为权重来计算中心点
+        # 此权重仅取1,0
+        center = frame1.center[ind1] * np.repeat(confidence1[:, np.newaxis], 3, axis=1) + frame2.center[
+            ind2
+        ] * np.repeat(confidence2[:, np.newaxis], 3, axis=1)
+        # 中心点移动，八个定点做出相同的移动
+        # 仅仅融合了中心
+        boxes = (
+            frame1.boxes[ind1]
+            + np.repeat(center[:, np.newaxis, :], 8, axis=1)
+            - np.repeat(frame1.center[ind1][:, np.newaxis, :], 8, axis=1)
+        )
+        # 匹配成功(ind1)的bbox在车路端的label均相同
+        label = frame1.label[ind1]
+        # 置信度取值和上述相同
+        confidence = frame1.confidence[ind1] * confidence1 + frame2.confidence[ind2] * confidence2
+        # arrows = frame1.arrows[ind1]
+
+        boxes_u = []
+        label_u = []
+        confidence_u = []
+        # arrows_u = []
+        # 保留车端被丢弃的bboox
+        if self.retain_type in ["all", "main"]:
+            for i in range(frame1.num_boxes):
+                if i not in ind1 and frame1.label[i] != -1:
+                    boxes_u.append(frame1.boxes[i])
+                    label_u.append(frame1.label[i])
+                    confidence_u.append(frame1.confidence[i])
+                    # arrows_u.append(frame1.arrows[i])
+        # 保留路端被丢弃的bbox，但置信度*0.4
+        if self.retain_type in ["all"]:
+            for i in range(frame2.num_boxes):
+                if i not in ind2 and frame2.label[i] != -1:
+                    boxes_u.append(frame2.boxes[i])
+                    label_u.append(frame2.label[i])
+                    confidence_u.append(frame2.confidence[i] * 0.4)
+                    # arrows_u.append(frame2.arrows[i])
+        if len(boxes_u) == 0:
+            result_dict = {
+                "boxes_3d": boxes,
+                # "arrows": arrows,
+                "labels_3d": label,
+                "scores_3d": confidence,
+            }
+        else:
+            result_dict = {
+                "boxes_3d": np.concatenate((boxes, np.array(boxes_u)), axis=0),
+                # "arrows": np.concatenate((arrows, np.array(arrows_u)), axis=0),
+                "labels_3d": np.concatenate((label, np.array(label_u)), axis=0),
+                "scores_3d": np.concatenate((confidence, np.array(confidence_u)), axis=0),
+            }
+        return result_dict, pred_dict
+    
+    def fuse(self, frame_r, frame_v, ind_r, ind_v):
+        if self.perspective == "infrastructure":
+            frame1 = frame_r
+            frame2 = frame_v
+            ind1 = ind_r
+            ind2 = ind_v
+        elif self.perspective == "vehicle":
+            frame1 = frame_v
+            frame2 = frame_r
+            ind1 = ind_v
+            ind2 = ind_r
+
+        confidence1 = np.array(frame1.confidence[ind1])
+        confidence2 = np.array(frame2.confidence[ind2])
+        # max: 取二者最大
+        # main: 采用主端
+        if self.trust_type == "max":
+            confidence1 = confidence1 > confidence2
+            confidence2 = 1 - confidence1
+        elif self.trust_type == "main":
+            confidence1 = np.ones_like(confidence1)
+            confidence2 = 1 - confidence1
+        # TODO
+        # 使用confidence作为权重来计算中心点
+        # 此权重仅取1,0
+        center = frame1.center[ind1] * np.repeat(confidence1[:, np.newaxis], 3, axis=1) + frame2.center[
+            ind2
+        ] * np.repeat(confidence2[:, np.newaxis], 3, axis=1)
+        # 中心点移动，八个定点做出相同的移动
+        # 仅仅融合了中心
+        boxes = (
+            frame1.boxes[ind1]
+            + np.repeat(center[:, np.newaxis, :], 8, axis=1)
+            - np.repeat(frame1.center[ind1][:, np.newaxis, :], 8, axis=1)
+        )
+        # 匹配成功(ind1)的bbox在车路端的label均相同
+        label = frame1.label[ind1]
+        # 置信度取值和上述相同
+        confidence = frame1.confidence[ind1] * confidence1 + frame2.confidence[ind2] * confidence2
+        # arrows = frame1.arrows[ind1]
+
+        boxes_u = []
+        label_u = []
+        confidence_u = []
+        # arrows_u = []
+        # 保留车端被丢弃的bboox
+        if self.retain_type in ["all", "main"]:
+            for i in range(frame1.num_boxes):
+                if i not in ind1 and frame1.label[i] != -1:
+                    boxes_u.append(frame1.boxes[i])
+                    label_u.append(frame1.label[i])
+                    confidence_u.append(frame1.confidence[i])
+                    # arrows_u.append(frame1.arrows[i])
+        # 保留路端被丢弃的bbox，但置信度*0.4
         if self.retain_type in ["all"]:
             for i in range(frame2.num_boxes):
                 if i not in ind2 and frame2.label[i] != -1:

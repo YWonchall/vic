@@ -12,8 +12,9 @@ logger = logging.getLogger(__name__)
 
 from tqdm import tqdm
 import numpy as np
+import pandas as pd
 
-from v2x_utils import range2box, id_to_str, Evaluator
+from v2x_utils import range2box, id_to_str, Evaluator, assign_gt_boxes
 from config import add_arguments
 from dataset import SUPPROTED_DATASETS
 from dataset.dataset_utils import save_pkl
@@ -23,6 +24,7 @@ from models.model_utils import Channel
 
 def eval_vic(args, dataset, model, evaluator):
     idx = -1
+    data_arr = []
     for VICFrame, label, filt in tqdm(dataset):
         idx += 1
         # if idx % 10 != 0:
@@ -32,22 +34,37 @@ def eval_vic(args, dataset, model, evaluator):
         except Exception:
             veh_id = VICFrame["vehicle_pointcloud_path"].split("/")[-1].replace(".pcd", "")
         # 2.1
-        pred = model(
+        pred, pred_dict = model(
             VICFrame,
             filt,
             None if not hasattr(dataset, "prev_inf_frame") else dataset.prev_inf_frame,
         )
         # prev_inf_frame用于async的路端
-
-        evaluator.add_frame(pred, label)
+        #print(pred_dict)
+        assigned_boxes = assign_gt_boxes(label,pred_dict,'car', 0.5, "bev")
+        for box in assigned_boxes:
+            veh_boxes = box['box'].reshape(-1)
+            inf_boxes = box['inf_pred'].reshape(-1)
+            gt_boxes = box['gt_boxes'].reshape(-1)
+            veh_scores = box['score']
+            inf_socres = box['inf_scores']
+            data = np.concatenate((veh_boxes,inf_boxes,np.array([veh_scores]),np.array([inf_socres]),gt_boxes))
+            data_arr.append(data)
+        # evaluator.add_frame(pred, label)
+        #data_arr = np.array(data_arr)
+        # print(data_arr.shape)
         pipe.flush()
+        
+        #inf_pred = pred_dict.pop('inf_pred')
+        # if idx == 5:
+        #     pass
         # pred["label"] = label["boxes_3d"]
         # pred["veh_id"] = veh_id
         # save_pkl(pred, osp.join(args.output, "result", pred["veh_id"] + ".pkl"))
-
-    evaluator.print_ap("3d")
-    evaluator.print_ap("bev")
-    print("Average Communication Cost = %.2lf Bytes" % (pipe.average_bytes()))
+    pd.DataFrame(data_arr).to_csv(f'/workspace/late-fusion-data.csv',index=False)
+    # evaluator.print_ap("3d")
+    # evaluator.print_ap("bev")
+    # print("Average Communication Cost = %.2lf Bytes" % (pipe.average_bytes()))
 
 
 def eval_single(args, dataset, model, evaluator):

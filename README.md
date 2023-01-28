@@ -178,6 +178,9 @@ zip ../test.zip ./*
 
 # TODO:
 - 改进融合方法
+    - match
+    - fuse
+        - diff<1 两个端的都很近，可考虑增加diff
 range？
 
 # 评估结果
@@ -222,7 +225,7 @@ range？
 | veh | 3 | pointpillars_my| cooperative_val| 67.24|
 | veh | 3 | pointpillars_my| cooperative_test| 40.31732|
 
-
+# backup
 ## 1.inf
 ### 1.1 mvxnet_base
 ```

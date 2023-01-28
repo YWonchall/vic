@@ -2,11 +2,11 @@ from .geometry_utils import point_in_box
 from config import superclass
 import numpy as np
 
-
+# 判定两个框是否为同一个目标
 def diff_label_filt(frame1, frame2, i, j):
     size = frame1.size[i]
-    diff = np.abs(frame1.center[i] - frame2.center[j]) / size
-    return diff[0] <= 1 and diff[1] <= 1 and diff[2] <= 1 and frame1.label[i] == frame2.label[j]
+    diff = np.abs(frame1.center[i] - frame2.center[j]) / (size+1e-6)
+    return diff[0] <= 2 and diff[1] <= 2 and diff[2] <= 2 and frame1.label[i] == frame2.label[j]
 
 
 class Filter(object):

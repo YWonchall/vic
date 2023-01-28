@@ -5,6 +5,7 @@ from .transformation_utils import *
 from .geometry_utils import *
 from .filter_utils import *
 from .eval_utils import *
+from .fuse_utils import *
 from .iou_utils import *
 
 
