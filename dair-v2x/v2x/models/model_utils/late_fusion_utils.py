@@ -3,7 +3,8 @@ import pandas as pd
 import pickle
 from scipy.optimize import linear_sum_assignment
 from sklearn.linear_model import LinearRegression
-
+import torch.nn as nn
+import torch
 inf = 1e42  # infinity
 # 八点转中心点+lwh
 def box2info(boxes):
@@ -372,6 +373,21 @@ class MLPFuser(object):
         self.perspective = perspective
         self.trust_type = trust_type
         self.retain_type = retain_type
+        self.net = nn.Sequential(
+            nn.Conv2d(3, 24, kernel_size=3,padding=1),
+            nn.BatchNorm2d(24),
+            nn.ReLU(),
+            nn.Conv2d(24, 48, kernel_size=3,padding=1),
+            nn.BatchNorm2d(48),
+            nn.ReLU(),
+            nn.AdaptiveAvgPool2d((1,1)),
+            nn.Flatten(),
+            nn.Linear(48,48),
+            nn.Linear(48,24),
+        )
+        self.net.load_state_dict(torch.load('/workspace/vic-competition/mlp-fusion/linear.pth'))
+        self.net.eval()
+
     def save_data(self, frame_r, frame_v, ind_r, ind_v):
         if self.perspective == "infrastructure":
             frame1 = frame_r
@@ -464,6 +480,7 @@ class MLPFuser(object):
         return result_dict, pred_dict
     
     def fuse(self, frame_r, frame_v, ind_r, ind_v):
+        
         if self.perspective == "infrastructure":
             frame1 = frame_r
             frame2 = frame_v
@@ -477,31 +494,18 @@ class MLPFuser(object):
 
         confidence1 = np.array(frame1.confidence[ind1])
         confidence2 = np.array(frame2.confidence[ind2])
-        # max: 取二者最大
-        # main: 采用主端
-        if self.trust_type == "max":
-            confidence1 = confidence1 > confidence2
-            confidence2 = 1 - confidence1
-        elif self.trust_type == "main":
-            confidence1 = np.ones_like(confidence1)
-            confidence2 = 1 - confidence1
-        # TODO
-        # 使用confidence作为权重来计算中心点
-        # 此权重仅取1,0
-        center = frame1.center[ind1] * np.repeat(confidence1[:, np.newaxis], 3, axis=1) + frame2.center[
-            ind2
-        ] * np.repeat(confidence2[:, np.newaxis], 3, axis=1)
-        # 中心点移动，八个定点做出相同的移动
-        # 仅仅融合了中心
-        boxes = (
-            frame1.boxes[ind1]
-            + np.repeat(center[:, np.newaxis, :], 8, axis=1)
-            - np.repeat(frame1.center[ind1][:, np.newaxis, :], 8, axis=1)
-        )
+        # {'boxes_3d': Array[N, 8, 3], 'labels_3d': Array[N], 'scores_3d': Array[N]}
+        veh_boxes = frame1.boxes[ind1].reshape(-1,4,2,3)
+        inf_boxes = frame2.boxes[ind2].reshape(-1,4,2,3)
+        source_boxes = np.concatenate((veh_boxes,inf_boxes), axis=2)
+
+        data = torch.tensor(source_boxes,dtype=torch.float32).permute(0,3,1,2)
+        boxes = self.net(data).detach().numpy().reshape(-1,8,3)
+
         # 匹配成功(ind1)的bbox在车路端的label均相同
         label = frame1.label[ind1]
         # 置信度取值和上述相同
-        confidence = frame1.confidence[ind1] * confidence1 + frame2.confidence[ind2] * confidence2
+        confidence = frame1.confidence[ind1] # * confidence1 + frame2.confidence[ind2] * confidence2
         # arrows = frame1.arrows[ind1]
 
         boxes_u = []
@@ -522,7 +526,7 @@ class MLPFuser(object):
                 if i not in ind2 and frame2.label[i] != -1:
                     boxes_u.append(frame2.boxes[i])
                     label_u.append(frame2.label[i])
-                    confidence_u.append(frame2.confidence[i] * 0.4)
+                    confidence_u.append(frame2.confidence[i] * 0.8)
                     # arrows_u.append(frame2.arrows[i])
         if len(boxes_u) == 0:
             result_dict = {

@@ -417,13 +417,10 @@ class LateFusion(BaseModel):
         ind_inf, ind_veh, cost = matcher.match(pred_inf, pred_veh)
         logger.debug("matched boxes: {}, {}".format(ind_inf, ind_veh))
         # Q2, fuse
-        # 一
         fuser = MLPFuser(perspective="vehicle", trust_type="main", retain_type="all")
-        result,preds = fuser.save_data(pred_inf, pred_veh, ind_inf, ind_veh)
         # fuser = BasicFuser(perspective="vehicle", trust_type="max", retain_type="all")
-        # result = fuser.fuse(pred_inf, pred_veh, ind_inf, ind_veh)
+        result = fuser.fuse(pred_inf, pred_veh, ind_inf, ind_veh)
         result["inf_id"] = id_inf
         result["veh_id"] = id_veh
         result["inf_boxes"] = pred_inf.boxes
-        # 二
-        return result,preds
+        return result
