@@ -2,6 +2,49 @@ import os
 import json
 import numpy as np
 from pypcd import pypcd
+import open3d as o3d
+
+class NumpyEncoder(json.JSONEncoder):
+    """ Special json encoder for numpy types """
+    def default(self, obj):
+        if isinstance(obj, (np.int_, np.intc, np.intp, np.int8,
+                            np.int16, np.int32, np.int64, np.uint8,
+                            np.uint16, np.uint32, np.uint64)):
+            return int(obj)
+        elif isinstance(obj, (np.float_, np.float16, np.float32,
+                              np.float64)):
+            return float(obj)
+        elif isinstance(obj, (np.ndarray,)):
+            return obj.tolist()
+        return json.JSONEncoder.default(self, obj)
+
+
+def box2info(boxes):
+    num_boxes = boxes.shape[0]
+    # 预测box中心
+    center = np.mean(boxes, axis=1)
+    size = np.zeros((num_boxes, 3))
+    size[:, 1] = (
+        np.sum((boxes[:, 2, :] - boxes[:, 1, :]) ** 2, axis=1) ** 0.5
+        + np.sum((boxes[:, 6, :] - boxes[:, 5, :]) ** 2, axis=1) ** 0.5
+    ) / 2
+    size[:, 0] = (
+        np.sum((boxes[:, 4, :] - boxes[:, 0, :]) ** 2, axis=1) ** 0.5
+        + np.sum((boxes[:, 6, :] - boxes[:, 2, :]) ** 2, axis=1) ** 0.5
+    ) / 2
+    size[:, 2] = (
+        boxes[:, 1, :]
+        + boxes[:, 2, :]
+        + boxes[:, 5, :]
+        + boxes[:, 6, :]
+        - boxes[:, 0, :]
+        - boxes[:, 3, :]
+        - boxes[:, 4, :]
+        - boxes[:, 7, :]
+    )[:, 2] / 4
+    # 长方体中心
+    # center = boxes[:,7] + (size/2)
+    return center, size
 
 
 def read_pcd(path_pcd):
@@ -44,3 +87,74 @@ def concatenate_pcd2bin(pc1, pc2, path_save):
     new_metadata["data"] = "binary"
     pc_save = pypcd.PointCloud(new_metadata, np_pcd)
     pc_save.save_pcd(path_save, compression="binary_compressed")
+
+def get_filted_index(pointclouds, boxes):
+    # pointclouds: [N,4]
+    # boxes: [M,8,3]
+    center,size = box2info(boxes) # N 3
+    centers = np.repeat(center.reshape(-1,1,3),8,axis=1)
+    # for i in range(len(boxes)):
+    #     trans = [boxes[i][7][0],boxes[i][7][1],boxes[i][7][2]]
+    #     draw_mesh(size[i][0],size[i][1],size[i][2],trans,f'box_{i}.obj')
+    boxes_dis = np.max(np.sum((centers-boxes)**2,axis=2)**0.5,axis=1) # N
+    points = pointclouds[:,:3] # M 3
+    retain_index = np.full(len(points), False, dtype=bool)
+    for i in range(len(center)):
+        points_dis = np.sum((points-center[i])**2,axis=1)**0.5
+        retain_ind = points_dis < boxes_dis[i]
+        retain_index += retain_ind
+    return retain_index
+    # point_cloud = o3d.geometry.PointCloud()
+    # point_cloud.points = o3d.utility.Vector3dVector(points[retain_index])
+    # # print(np.asarray(point_cloud.points)[:10])
+    # o3d.io.write_point_cloud('./retain_final.pcd',point_cloud)
+
+def draw_mesh(size,translate,filename):
+  
+    mesh_box = o3d.geometry.TriangleMesh.create_box(width=size[0],
+                                                    height=size[1],
+                                                    depth=size[2])
+    mesh_box.compute_vertex_normals()
+    # mesh_box.paint_uniform_color([0.9, 0.1, 0.1])
+    mesh_box.translate(translate)
+    #o3d.visualization.draw_geometries([mesh_box])
+    o3d.io.write_triangle_mesh(filename,mesh_box)
+
+def save_mesh(pointclouds, boxes, folder_path):
+    # pointclouds: [N,4]
+    # boxes: [M,8,3]
+    center,size = box2info(boxes) # N 3
+    for i in range(len(boxes)):
+        trans = [boxes[i][7][0],boxes[i][7][1],boxes[i][7][2]]
+        draw_mesh(size[i],trans,folder_path+f'/box_{i}.obj')
+    
+    point_cloud = o3d.geometry.PointCloud()
+    point_cloud.points = o3d.utility.Vector3dVector(pointclouds[:,:3])
+    # print(np.asarray(point_cloud.points)[:10])
+    o3d.io.write_point_cloud(folder_path+f'/filted_points.pcd',point_cloud)
+
+def filt_point_by_boxes(pcd, boxes):
+    # folder_path = '/workspace'
+    pcd_array = pcd.pc_data.view(np.float32).reshape(pcd.pc_data.shape+(-1,))
+    boxes = np.array(boxes['boxes_3d'])
+    # point_cloud = o3d.geometry.PointCloud()
+    # point_cloud.points = o3d.utility.Vector3dVector(pcd_array[:,:3])
+    # # print(np.asarray(point_cloud.points)[:10])
+    # o3d.io.write_point_cloud(folder_path+f'/source_points.pcd',point_cloud)
+
+    retain_ind = get_filted_index(pcd_array,boxes)
+    pcd.pc_data = pcd.pc_data[retain_ind]
+    # filted_pcd_array = filted_points.view(np.float32).reshape(filted_points.shape+(-1,))
+    # save_mesh(filted_pcd_array, boxes, folder_path)
+    # print(pcd.pc_data.shape)
+    # print(boxes['boxes_3d'])
+    # print(pcd.pc_data[:10])
+    # outfile = '/workspace/boxes.json'
+    # with open(outfile,'w') as f:
+    #     json.dump(boxes,f,cls=NumpyEncoder)
+    # print(type(pcd.pc_data[:10]))
+    # pcd_array = pcd.pc_data.view(np.float32).reshape(pcd.pc_data.shape+(-1,))
+    # index = np.full(len(pcd.pc_data),False,dtype=bool)
+
+
+    return pcd

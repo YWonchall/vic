@@ -29,10 +29,11 @@ superclass = {
 }
 
 
-def add_arguments(parser):
+def add_arguments(parser): 
     parser.add_argument("--input", type=str, default="")
     parser.add_argument("--output", type=str, default="")
     parser.add_argument("--test", action="store_true") # 仅推理
+    parser.add_argument("--inf-filter", action="store_true") # 路端点云过滤
     parser.add_argument("--split", type=str, default="val")
     parser.add_argument(
         "--split-data-path", type=str, default="../data/split_datas/example-cooperative-split-data.json"

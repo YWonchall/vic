@@ -34,7 +34,7 @@ class NumpyEncoder(json.JSONEncoder):
             return obj.tolist()
         return json.JSONEncoder.default(self, obj)
 
-def eval_vic(args, dataset, model, evaluator):
+def eval_vic(args, dataset, model):
     idx = -1
     for VICFrame, _, filt in tqdm(dataset):
         idx += 1
@@ -54,10 +54,11 @@ def eval_vic(args, dataset, model, evaluator):
         pipe.flush()
         # pred["label"] = label["boxes_3d"]   # world -> vehicle lidar 后的坐标
         # pred["veh_id"] = veh_id
-        outfile = osp.join(args.output, "result", pred["veh_id"] + '.json')
-        pred.pop('inf_id')
-        pred.pop('veh_id')
-        pred.pop('inf_boxes')
+        outfile = osp.join(args.output, "result", veh_id + '.json')
+        if(args.model=='late_fusion'):
+            pred.pop('inf_id')
+            pred.pop('veh_id')
+            pred.pop('inf_boxes')
         pred['ab_cost'] = pipe.average_bytes()
         # save_pkl(pred, osp.join(args.output, "result", pred["veh_id"] + ".pkl"))
         with open(outfile,'w') as f:
@@ -66,17 +67,17 @@ def eval_vic(args, dataset, model, evaluator):
     print("Average Communication Cost = %.2lf Bytes" % (pipe.average_bytes()))
 
 
-def eval_single(args, dataset, model, evaluator):
+def eval_single(args, dataset, model):
     for frame, label, filt in tqdm(dataset):
         pred = model(frame, filt)
-        if args.sensortype == "camera":
-            evaluator.add_frame(pred, label["camera"])
-        elif args.sensortype == "lidar":
-            evaluator.add_frame(pred, label["lidar"])
-        save_pkl({"boxes_3d": label["lidar"]["boxes_3d"]}, osp.join(args.output, "result", frame.id["camera"] + ".pkl"))
+    #     if args.sensortype == "camera":
+    #         evaluator.add_frame(pred, label["camera"])
+    #     elif args.sensortype == "lidar":
+    #         evaluator.add_frame(pred, label["lidar"])
+    #     save_pkl({"boxes_3d": label["lidar"]["boxes_3d"]}, osp.join(args.output, "result", frame.id["camera"] + ".pkl"))
 
-    evaluator.print_ap("3d")
-    evaluator.print_ap("bev")
+    # evaluator.print_ap("3d")
+    # evaluator.print_ap("bev")
 
 
 if __name__ == "__main__":
@@ -111,15 +112,15 @@ if __name__ == "__main__":
         veh_sensortype=args.veh_sensortype,
         extended_range=extended_range,
     )
-    logger.info("loading evaluator")
-    evaluator = Evaluator(args.pred_classes)
+    # logger.info("loading evaluator")
+    # evaluator = Evaluator(args.pred_classes)
 
     logger.info("loading model")
     if args.eval_single:
         model = SUPPROTED_MODELS[args.model](args)
-        eval_single(args, dataset, model, evaluator)
+        eval_single(args, dataset, model)
     else:
         pipe = Channel()
         # 融合相关代码
         model = SUPPROTED_MODELS[args.model](args, pipe)
-        eval_vic(args, dataset, model, evaluator)
+        eval_vic(args, dataset, model)

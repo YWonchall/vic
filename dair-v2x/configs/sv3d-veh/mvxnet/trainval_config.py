@@ -1,5 +1,5 @@
 dataset_type = "KittiDataset"
-data_root = "/workspace/dair-v2x/data/DAIR-V2X/cooperative-vehicle-infrastructure-example/infrastructure-side"
+data_root = "/workspace/vic-competition/data/cooperative-vehicle-infrastructure/vic3d-early-fusion-training"
 class_names = ["Pedestrian", "Cyclist", "Car"]
 voxel_size = [0.05, 0.05, 0.1]
 point_cloud_range = [0, -40, -3, 70.4, 40, 1]

@@ -1,3 +1,3 @@
-CONFIG="/workspace/vic-competition/dair-v2x/configs/vic3d/late-fusion-pointcloud/pointpillars/trainval_config_v_car.py"
-WORKDIR="./work-dirs/vic/pointpillars/veh-car/train"
+CONFIG="/workspace/vic-competition/dair-v2x/configs/vic3d/early-fusion-multimodal/mvxnet/trainval_config.py"
+WORKDIR="/workspace/vic-competition/mmdetection3d/work-dirs/vic/veh/early-fusion/mvxnet/train"
 python tools/train.py $CONFIG  --work-dir $WORKDIR

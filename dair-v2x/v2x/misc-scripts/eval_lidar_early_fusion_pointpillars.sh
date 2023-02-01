@@ -9,16 +9,17 @@ CONFIG_NAME='trainval_config.py'
 SPLIT_DATA_PATH="../data/split_datas/cooperative-split-data.json"
 
 # srun --gres=gpu:a100:1 --time=1-0:0:0 --job-name "dair-v2x" \
-CUDA_VISIBLE_DEVICES=$1
-FUSION_METHOD=$2
-DELAY_K=$3
-EXTEND_RANGE_START=$4
-EXTEND_RANGE_END=$5
+CUDA_VISIBLE_DEVICES=0 #$1
+FUSION_METHOD='early_fusion' #$2
+DELAY_K=1 #$3
+EXTEND_RANGE_START=0 #$4
+EXTEND_RANGE_END=100 #$5
+# sensortype用于读取数据集
 python eval.py \
   --input $DATA \
   --output $OUTPUT \
   --model $FUSION_METHOD \
-  --dataset vic-async \
+  --dataset vic-sync \
   --k $DELAY_K \
   --split val \
   --split-data-path $SPLIT_DATA_PATH \
@@ -27,5 +28,7 @@ python eval.py \
   --device ${CUDA_VISIBLE_DEVICES} \
   --pred-class car \
   --sensortype lidar \
+  --inf-sensortype lidar \
+  --veh-sensortype lidar \
   --extended-range $EXTEND_RANGE_START -39.68 -3 $EXTEND_RANGE_END 39.68 1 \
   --overwrite-cache

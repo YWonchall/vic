@@ -27,8 +27,8 @@ def eval_vic(args, dataset, model, evaluator):
     data_arr = []
     for VICFrame, label, filt in tqdm(dataset):
         idx += 1
-        # if idx % 10 != 0:
-        #     continue
+        if idx % 15 != 0:
+            continue
         try:
             veh_id = dataset.data[idx][0]["vehicle_pointcloud_path"].split("/")[-1].replace(".pcd", "")
         except Exception:
@@ -39,10 +39,13 @@ def eval_vic(args, dataset, model, evaluator):
             filt,
             None if not hasattr(dataset, "prev_inf_frame") else dataset.prev_inf_frame,
         )
+        # 单类
+        for ii in range(len(pred["labels_3d"])):
+            pred["labels_3d"][ii] = 2
         # prev_inf_frame用于async的路端
         evaluator.add_frame(pred, label)
         pipe.flush()
-
+        
     evaluator.print_ap("3d")
     evaluator.print_ap("bev")
     print("Average Communication Cost = %.2lf Bytes" % (pipe.average_bytes()))

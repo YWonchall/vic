@@ -13,5 +13,5 @@ cd ..
 pip install seaborn
 # pip install vtk==8.1.2
 # pip install mayavi
-# apt-get update
-# pip install open3d==0.11.1
+apt-get update
+pip install open3d==0.11.1
