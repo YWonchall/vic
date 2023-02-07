@@ -1,8 +1,6 @@
 dataset_type = "KittiDataset"
-# 1
-data_root = "/workspace/vic-competition/dair-v2x/data/DAIR-V2X/cooperative-vehicle-infrastructure/infrastructure-side"
-###
-class_names = ["Car"]
+data_root = "/workspace/vic-competition/data/cooperative-vehicle-infrastructure/infrastructure-side/"
+class_names = ["Pedestrian", "Cyclist", "Car"]
 voxel_size = [0.05, 0.05, 0.1]
 point_cloud_range = [0, -40, -3, 70.4, 40, 1]
 z_center_pedestrian = -0.6
@@ -15,23 +13,22 @@ img_scale = (960, 540)
 to_rgb = False
 img_norm_cfg = dict(mean=mean, std=std, to_rgb=to_rgb)
 input_modality = dict(use_lidar=True, use_camera=True)
-# 2
-lr = 3e-4
-optimizer = dict(type="AdamW", lr=lr, betas=(0.95, 0.99), weight_decay=0.01)
+
+lr = 0.003
+optimizer = dict(type="AdamW", lr=0.003, betas=(0.95, 0.99), weight_decay=0.01)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
-# 3
-lr_config = dict(policy="step", step=[3,4], warmup=None, warmup_iters=1000, warmup_ratio=0.1)
+lr_config = dict(policy="CosineAnnealing", warmup="linear", warmup_iters=1000, warmup_ratio=0.1, min_lr_ratio=1e-05)
 momentum_config = None
-# 4
-runner = dict(type="EpochBasedRunner", max_epochs=5)
+runner = dict(type="EpochBasedRunner", max_epochs=1)
 checkpoint_config = dict(interval=1)
-log_config = dict(interval=50, hooks=[dict(type="TextLoggerHook"), dict(type="TensorboardLoggerHook")])
+# 每迭代多少次打印一次信息，与迭代次数无关(由batchsize决定)
+log_config = dict(interval=2, hooks=[dict(type="TextLoggerHook"), dict(type="TensorboardLoggerHook")])
 dist_params = dict(backend="nccl")
 log_level = "INFO"
-# 5
-#work_dir = "/workspace/vic-competition/mmdetection3d/work-dirs/exam-c/inf/train/"       
+work_dir = "./work-dirs/exam-sv/train"
 load_from = None#"https://download.openmmlab.com/mmdetection3d/pretrain_models/mvx_faster_rcnn_detectron2-caffe_20e_coco-pretrain_gt-sample_kitti-3-class_moderate-79.3_20200207-a4a6a3c7.pth"
-resume_from = None #"/workspace/vic-competition/mmdetection3d/work-dirs/vic/inf/train/latest.pth"
+
+resume_from = None
 workflow = [("train", 1)]
 
 model = dict(
@@ -78,8 +75,7 @@ model = dict(
     pts_neck=dict(type="SECONDFPN", in_channels=[128, 256], upsample_strides=[1, 2], out_channels=[256, 256]),
     pts_bbox_head=dict(
         type="Anchor3DHead",
-        ###
-        num_classes=1,
+        num_classes=3,
         in_channels=512,
         feat_channels=512,
         use_direction_classifier=True,
@@ -190,9 +186,8 @@ eval_pipeline = [
     dict(type="Collect3D", keys=["points", "img"]),
 ]
 data = dict(
-    # 6
-    samples_per_gpu=4,
-    workers_per_gpu=4  ,
+    samples_per_gpu=5,
+    workers_per_gpu=1,
     train=dict(
         type="RepeatDataset",
         times=2,
@@ -302,7 +297,7 @@ data = dict(
     ),
 )
 evaluation = dict(
-    interval=1,
+    interval=2, 
     pipeline=[
         dict(type="LoadPointsFromFile", coord_type="LIDAR", load_dim=4, use_dim=4),
         dict(type="LoadImageFromFile"),

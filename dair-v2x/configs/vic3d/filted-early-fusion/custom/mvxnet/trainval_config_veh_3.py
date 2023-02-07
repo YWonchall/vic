@@ -1,5 +1,5 @@
 dataset_type = "KittiDataset"
-data_root = "/workspace/vic-competition/data/cooperative-vehicle-infrastructure/vic3d-early-fusion-training-all/"
+data_root = "/workspace/vic-competition/dair-v2x/data/DAIR-V2X/cooperative-vehicle-infrastructure/vic3d-early-fusion-training"
 class_names = ["Pedestrian", "Cyclist", "Car"]
 voxel_size = [0.05, 0.05, 0.1]
 point_cloud_range = [0, -40, -3, 70.4, 40, 1]
@@ -14,19 +14,18 @@ to_rgb = False
 img_norm_cfg = dict(mean=mean, std=std, to_rgb=to_rgb)
 input_modality = dict(use_lidar=True, use_camera=True)
 
-lr = 0.003
-optimizer = dict(type="AdamW", lr=0.003, betas=(0.95, 0.99), weight_decay=0.01)
+lr = 3e-4
+optimizer = dict(type="AdamW", lr=lr, betas=(0.95, 0.99), weight_decay=0.01)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
-lr_config = dict(policy="CosineAnnealing", warmup="linear", warmup_iters=1000, warmup_ratio=0.1, min_lr_ratio=1e-05)
+lr_config = dict(policy="step", step=[2,3], warmup=None, warmup_iters=1000, warmup_ratio=0.1)
 momentum_config = None
-runner = dict(type="EpochBasedRunner", max_epochs=1)
+runner = dict(type="EpochBasedRunner", max_epochs=3)
 checkpoint_config = dict(interval=1)
-# 每迭代多少次打印一次信息，与迭代次数无关(由batchsize决定)
-log_config = dict(interval=2, hooks=[dict(type="TextLoggerHook"), dict(type="TensorboardLoggerHook")])
+log_config = dict(interval=100, hooks=[dict(type="TextLoggerHook"), dict(type="TensorboardLoggerHook")])
 dist_params = dict(backend="nccl")
 log_level = "INFO"
-work_dir = "./work-dirs/exam-sv/train"
-load_from = None#"https://download.openmmlab.com/mmdetection3d/pretrain_models/mvx_faster_rcnn_detectron2-caffe_20e_coco-pretrain_gt-sample_kitti-3-class_moderate-79.3_20200207-a4a6a3c7.pth"
+# work_dir = "./work-dirs/exam-sv/train"
+load_from = "/workspace/vic-competition/dair-v2x/configs/vic3d/early-fusion-multimodal/mvxnet/mvxnet_veh_my.pth"
 
 resume_from = None
 workflow = [("train", 1)]
@@ -186,8 +185,8 @@ eval_pipeline = [
     dict(type="Collect3D", keys=["points", "img"]),
 ]
 data = dict(
-    samples_per_gpu=5,
-    workers_per_gpu=1,
+    samples_per_gpu=4,
+    workers_per_gpu=4,
     train=dict(
         type="RepeatDataset",
         times=2,
@@ -297,7 +296,7 @@ data = dict(
     ),
 )
 evaluation = dict(
-    interval=2, 
+    interval=1, 
     pipeline=[
         dict(type="LoadPointsFromFile", coord_type="LIDAR", load_dim=4, use_dim=4),
         dict(type="LoadImageFromFile"),

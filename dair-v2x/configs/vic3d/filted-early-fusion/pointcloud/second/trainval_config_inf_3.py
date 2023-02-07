@@ -1,52 +1,36 @@
 dataset_type = "KittiDataset"
-data_root = "/workspace/vic-competition/dair-v2x/data/DAIR-V2X/cooperative-vehicle-infrastructure/vic3d-early-fusion-training"
-class_names = ["Car"]
-point_cloud_range = [0, -39.68, -3, 92.16, 39.68, 1]
-voxel_size = [0.16, 0.16, 4]
-length = int((point_cloud_range[3] - point_cloud_range[0]) / voxel_size[0])
-height = int((point_cloud_range[4] - point_cloud_range[1]) / voxel_size[1])
-output_shape = [height, length]
-z_center_car = -1.78
-
-# work_dir = "./work_dirs/vic3d_earlyfusion_pointpillars"
-
+data_root = "/workspace/vic-competition/dair-v2x/data/DAIR-V2X/cooperative-vehicle-infrastructure/infrastructure-side/"
+class_names = ["Pedestrian", "Cyclist", "Car"]
+point_cloud_range = [0, -40, -3, 70.4, 40, 1]
+voxel_size = [0.05, 0.05, 0.1]
+input_modality = dict(use_lidar=True, use_camera=False)
+per_gpu_batch_size = 6
+per_gpu_num_works = 4
 model = dict(
     type="VoxelNet",
     voxel_layer=dict(
-        max_num_points=100, point_cloud_range=point_cloud_range, voxel_size=voxel_size, max_voxels=(16000, 40000)
+        max_num_points=5, point_cloud_range=point_cloud_range, voxel_size=voxel_size, max_voxels=(16000, 40000)
     ),
-    voxel_encoder=dict(
-        type="PillarFeatureNet",
-        in_channels=4,
-        feat_channels=[64],
-        with_distance=False,
-        voxel_size=voxel_size,
-        point_cloud_range=point_cloud_range,
+    voxel_encoder=dict(type="HardSimpleVFE"),
+    middle_encoder=dict(
+        type="SparseEncoder", in_channels=4, sparse_shape=[41, 1600, 1408], order=("conv", "norm", "act")
     ),
-    middle_encoder=dict(type="PointPillarsScatter", in_channels=64, output_shape=output_shape),
-    backbone=dict(
-        type="SECOND", in_channels=64, layer_nums=[3, 5, 5], layer_strides=[2, 2, 2], out_channels=[64, 128, 256]
-    ),
-    neck=dict(type="SECONDFPN", in_channels=[64, 128, 256], upsample_strides=[1, 2, 4], out_channels=[128, 128, 128]),
+    backbone=dict(type="SECOND", in_channels=256, layer_nums=[5, 5], layer_strides=[1, 2], out_channels=[128, 256]),
+    neck=dict(type="SECONDFPN", in_channels=[128, 256], upsample_strides=[1, 2], out_channels=[256, 256]),
     bbox_head=dict(
         type="Anchor3DHead",
-        num_classes=1,
-        in_channels=384,
-        feat_channels=384,
+        num_classes=3,
+        in_channels=512,
+        feat_channels=512,
         use_direction_classifier=True,
         anchor_generator=dict(
             type="Anchor3DRangeGenerator",
             ranges=[
-                [
-                    point_cloud_range[0],
-                    point_cloud_range[1],
-                    z_center_car,
-                    point_cloud_range[3],
-                    point_cloud_range[4],
-                    z_center_car,
-                ],
+                [0, -40.0, -0.6, 70.4, 40.0, -0.6],
+                [0, -40.0, -0.6, 70.4, 40.0, -0.6],
+                [0, -40.0, -1.78, 70.4, 40.0, -1.78],
             ],
-            sizes=[[1.6, 3.9, 1.56]],
+            sizes=[[0.6, 0.8, 1.73], [0.6, 1.76, 1.73], [1.6, 3.9, 1.56]],
             rotations=[0, 1.57],
             reshape_out=False,
         ),
@@ -61,6 +45,22 @@ model = dict(
             dict(
                 type="MaxIoUAssigner",
                 iou_calculator=dict(type="BboxOverlapsNearest3D"),
+                pos_iou_thr=0.35,
+                neg_iou_thr=0.2,
+                min_pos_iou=0.2,
+                ignore_iof_thr=-1,
+            ),
+            dict(
+                type="MaxIoUAssigner",
+                iou_calculator=dict(type="BboxOverlapsNearest3D"),
+                pos_iou_thr=0.35,
+                neg_iou_thr=0.2,
+                min_pos_iou=0.2,
+                ignore_iof_thr=-1,
+            ),
+            dict(
+                type="MaxIoUAssigner",
+                iou_calculator=dict(type="BboxOverlapsNearest3D"),
                 pos_iou_thr=0.6,
                 neg_iou_thr=0.45,
                 min_pos_iou=0.45,
@@ -72,37 +72,45 @@ model = dict(
         debug=False,
     ),
     test_cfg=dict(
-        use_rotate_nms=False,
+        use_rotate_nms=True,
         nms_across_levels=False,
         nms_thr=0.01,
-        score_thr=0.2,
+        score_thr=0.1,
         min_bbox_size=0,
-        nms_pre=1000,
-        max_num=300,
+        nms_pre=100,
+        max_num=50,
     ),
 )
 
+db_sampler = dict(
+    data_root=data_root,
+    info_path=data_root + "/kitti_dbinfos_train.pkl",
+    rate=1.0,
+    prepare=dict(filter_by_difficulty=[-1], filter_by_min_points=dict(Car=5, Pedestrian=10, Cyclist=10)),
+    classes=class_names,
+    sample_groups=dict(Car=12, Pedestrian=6, Cyclist=6),
+)
 file_client_args = dict(backend="disk")
 train_pipeline = [
-    dict(type="LoadPointsFromFile", coord_type="LIDAR", load_dim=4, use_dim=4),
-    dict(type="LoadAnnotations3D", with_bbox_3d=True, with_label_3d=True),
+    dict(type="LoadPointsFromFile", coord_type="LIDAR", load_dim=4, use_dim=4, file_client_args=dict(backend="disk")),
+    dict(type="LoadAnnotations3D", with_bbox_3d=True, with_label_3d=True, file_client_args=dict(backend="disk")),
     dict(
         type="ObjectSample",
         db_sampler=dict(
             data_root=data_root,
             info_path=data_root + "/kitti_dbinfos_train.pkl",
             rate=1.0,
-            prepare=dict(filter_by_difficulty=[-1], filter_by_min_points=dict(Car=5)),
+            prepare=dict(filter_by_difficulty=[-1], filter_by_min_points=dict(Car=5, Pedestrian=10, Cyclist=10)),
             classes=class_names,
-            sample_groups=dict(Car=15),
+            sample_groups=dict(Car=12, Pedestrian=6, Cyclist=6),
         ),
     ),
     dict(
         type="ObjectNoise",
         num_try=100,
-        translation_std=[0.25, 0.25, 0.25],
+        translation_std=[1.0, 1.0, 0.5],
         global_rot_range=[0.0, 0.0],
-        rot_range=[-0.15707963267, 0.15707963267],
+        rot_range=[-0.78539816, 0.78539816],
     ),
     dict(type="RandomFlip3D", flip_ratio_bev_horizontal=0.5),
     dict(type="GlobalRotScaleTrans", rot_range=[-0.78539816, 0.78539816], scale_ratio_range=[0.95, 1.05]),
@@ -113,10 +121,10 @@ train_pipeline = [
     dict(type="Collect3D", keys=["points", "gt_bboxes_3d", "gt_labels_3d"]),
 ]
 test_pipeline = [
-    dict(type="LoadPointsFromFile", coord_type="LIDAR", load_dim=4, use_dim=4),
+    dict(type="LoadPointsFromFile", coord_type="LIDAR", load_dim=4, use_dim=4, file_client_args=dict(backend="disk")),
     dict(
         type="MultiScaleFlipAug3D",
-        img_scale=(height, length),
+        img_scale=(1333, 800),
         pts_scale_ratio=1,
         flip=False,
         transforms=[
@@ -134,8 +142,8 @@ eval_pipeline = [
     dict(type="Collect3D", keys=["points"]),
 ]
 data = dict(
-    samples_per_gpu=6,
-    workers_per_gpu=4,
+    samples_per_gpu=per_gpu_batch_size,
+    workers_per_gpu=per_gpu_num_works,
     train=dict(
         type="RepeatDataset",
         times=2,
@@ -146,25 +154,38 @@ data = dict(
             split="training",
             pts_prefix="velodyne_reduced",
             pipeline=[
-                dict(type="LoadPointsFromFile", coord_type="LIDAR", load_dim=4, use_dim=4),
-                dict(type="LoadAnnotations3D", with_bbox_3d=True, with_label_3d=True),
+                dict(
+                    type="LoadPointsFromFile",
+                    coord_type="LIDAR",
+                    load_dim=4,
+                    use_dim=4,
+                    file_client_args=dict(backend="disk"),
+                ),
+                dict(
+                    type="LoadAnnotations3D",
+                    with_bbox_3d=True,
+                    with_label_3d=True,
+                    file_client_args=dict(backend="disk"),
+                ),
                 dict(
                     type="ObjectSample",
                     db_sampler=dict(
                         data_root=data_root,
                         info_path=data_root + "/kitti_dbinfos_train.pkl",
                         rate=1.0,
-                        prepare=dict(filter_by_difficulty=[-1], filter_by_min_points=dict(Car=5)),
+                        prepare=dict(
+                            filter_by_difficulty=[-1], filter_by_min_points=dict(Car=5, Pedestrian=10, Cyclist=10)
+                        ),
                         classes=class_names,
-                        sample_groups=dict(Car=15),
+                        sample_groups=dict(Car=12, Pedestrian=6, Cyclist=6),
                     ),
                 ),
                 dict(
                     type="ObjectNoise",
                     num_try=100,
-                    translation_std=[0.25, 0.25, 0.25],
+                    translation_std=[1.0, 1.0, 0.5],
                     global_rot_range=[0.0, 0.0],
-                    rot_range=[-0.15707963267, 0.15707963267],
+                    rot_range=[-0.78539816, 0.78539816],
                 ),
                 dict(type="RandomFlip3D", flip_ratio_bev_horizontal=0.5),
                 dict(type="GlobalRotScaleTrans", rot_range=[-0.78539816, 0.78539816], scale_ratio_range=[0.95, 1.05]),
@@ -177,7 +198,6 @@ data = dict(
             modality=dict(use_lidar=True, use_camera=False),
             classes=class_names,
             test_mode=False,
-            pcd_limit_range=point_cloud_range,
             box_type_3d="LiDAR",
         ),
     ),
@@ -188,10 +208,16 @@ data = dict(
         split="training",
         pts_prefix="velodyne_reduced",
         pipeline=[
-            dict(type="LoadPointsFromFile", coord_type="LIDAR", load_dim=4, use_dim=4),
+            dict(
+                type="LoadPointsFromFile",
+                coord_type="LIDAR",
+                load_dim=4,
+                use_dim=4,
+                file_client_args=dict(backend="disk"),
+            ),
             dict(
                 type="MultiScaleFlipAug3D",
-                img_scale=(height, length),
+                img_scale=(1333, 800),
                 pts_scale_ratio=1,
                 flip=False,
                 transforms=[
@@ -211,7 +237,6 @@ data = dict(
         modality=dict(use_lidar=True, use_camera=False),
         classes=class_names,
         test_mode=True,
-        pcd_limit_range=point_cloud_range,
         box_type_3d="LiDAR",
     ),
     test=dict(
@@ -221,10 +246,16 @@ data = dict(
         split="training",
         pts_prefix="velodyne_reduced",
         pipeline=[
-            dict(type="LoadPointsFromFile", coord_type="LIDAR", load_dim=4, use_dim=4),
+            dict(
+                type="LoadPointsFromFile",
+                coord_type="LIDAR",
+                load_dim=4,
+                use_dim=4,
+                file_client_args=dict(backend="disk"),
+            ),
             dict(
                 type="MultiScaleFlipAug3D",
-                img_scale=(height, length),
+                img_scale=(1333, 800),
                 pts_scale_ratio=1,
                 flip=False,
                 transforms=[
@@ -244,7 +275,6 @@ data = dict(
         modality=dict(use_lidar=True, use_camera=False),
         classes=class_names,
         test_mode=True,
-        pcd_limit_range=point_cloud_range,
         box_type_3d="LiDAR",
     ),
 )
@@ -258,18 +288,18 @@ evaluation = dict(
         dict(type="Collect3D", keys=["points"]),
     ],
 )
-
-lr = 3e-7
-optimizer = dict(type="AdamW", lr=lr, betas=(0.95, 0.99), weight_decay=0.01)
-optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
-lr_config = dict(policy="step",step=[4])
-momentum_config = None # dict(policy="cyclic", target_ratio=(0.8947368421052632, 1), cyclic_times=1, step_ratio_up=0.4)
-runner = dict(type="EpochBasedRunner", max_epochs=5)
+lr = 0.0018
+optimizer = dict(type="AdamW", lr=0.0018, betas=(0.95, 0.99), weight_decay=0.01)
+optimizer_config = dict(grad_clip=dict(max_norm=10, norm_type=2))
+lr_config = dict(policy="cyclic", target_ratio=(10, 0.0001), cyclic_times=1, step_ratio_up=0.4)
+momentum_config = dict(policy="cyclic", target_ratio=(0.8947368421052632, 1), cyclic_times=1, step_ratio_up=0.4)
+runner = dict(type="EpochBasedRunner", max_epochs=40)
 checkpoint_config = dict(interval=1)
 log_config = dict(interval=50, hooks=[dict(type="TextLoggerHook"), dict(type="TensorboardLoggerHook")])
 dist_params = dict(backend="nccl")
 log_level = "INFO"
-load_from = "/workspace/vic-competition/mmdetection3d/work-dirs/vic/veh-coop-filted/train/pointpillars-car/latest.pth"
-resume_from = None #'/workspace/vic-competition/mmdetection3d/work-dirs/vic/veh-coop-filted/train/pointpillars-car/latest.pth'
+work_dir = "./work_dirs/hv_second_secfpn_6x8_80e_kitti-3d-3class"
+load_from = None
+resume_from = None
 workflow = [("train", 1)]
 gpu_ids = range(0, 1)

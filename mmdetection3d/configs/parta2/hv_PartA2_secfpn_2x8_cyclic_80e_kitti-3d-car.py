@@ -73,7 +73,7 @@ model = dict(
 
 # dataset settings
 dataset_type = 'KittiDataset'
-data_root = 'data/kitti/'
+data_root = '/workspace/vic-competition/dair-v2x/data/DAIR-V2X/cooperative-vehicle-infrastructure/vehicle-side/'
 class_names = ['Car']
 input_modality = dict(use_lidar=True, use_camera=False)
 db_sampler = dict(

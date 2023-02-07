@@ -114,6 +114,7 @@ class InfOnly(BaseModel):
         super().__init__()
         self.model = LateFusionInf(args, pipe)
         self.pipe = pipe
+        self.args = args
 
     def forward(self, vic_frame, filt, offset, *args):
         self.model(
@@ -121,11 +122,16 @@ class InfOnly(BaseModel):
             vic_frame.transform(from_coord="Infrastructure_lidar", to_coord="Vehicle_lidar"),
             filt,
         )
-        pred = np.array(self.pipe.receive("boxes"))
+        boxes = np.array(self.pipe.receive("boxes"))
+        labels = np.array(self.pipe.receive("label"))
+        score = np.array(self.pipe.receive("score"))
+        if self.args.set_inf_label:
+            for ii in range(len(labels)):
+                labels[ii] = 2
         return {
-            "boxes_3d": pred,
-            "labels_3d": np.array(self.pipe.receive("label")),
-            "scores_3d": np.array(self.pipe.receive("score")),
+            "boxes_3d": boxes,
+            "labels_3d": labels,
+            "scores_3d": score,
         }
 
 
@@ -142,9 +148,13 @@ class VehOnly(BaseModel):
         super().__init__()
         self.model = LateFusionVeh(args)
         self.pipe = pipe
+        self.args = args
 
     def forward(self, vic_frame, filt, *args):
         pred = self.model(vic_frame.vehicle_frame(), None, filt)[0]
+        if self.args.set_veh_label:
+            for ii in range(len(pred["labels_3d"])):
+                pred["labels_3d"][ii] = 2
         return {
             "boxes_3d": np.array(pred["boxes_3d"]),
             "labels_3d": np.array(pred["labels_3d"]),

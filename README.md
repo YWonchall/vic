@@ -114,6 +114,7 @@ python tools/dataset_converter/dair2kitti.py --source-root ./data/DAIR-V2X/coope
 1.2.7 jpg -> png
 ```
 cd /workspace/vic-competition/dair-v2x/data/DAIR-V2X/cooperative-vehicle-infrastructure/vic3d-early-fusion-training/training/image_2/
+
 for file in *.jpg; do mv $file ${file%%.*}.png; done
 ```
 
@@ -127,7 +128,6 @@ python tools/create_data.py kitti --root-path \
 /workspace/vic-competition/dair-v2x/data/DAIR-V2X/cooperative-vehicle-infrastructure/vic3d-early-fusion-training \
 --extra-tag kitti
 ```
-1783
 
 ## 2. 数据集可视化
 > - 这里使用mmdetection里的可视化方法，dair-v2x中的可视化不可保存结果
@@ -154,7 +154,7 @@ if vis_task in ['multi_modality-det', 'mono-det']:
  
  > 可视化不同数据需要在配置文件中配置好加载方法，即文末的eval_pipeline。这里使用mvxnet多模态配置文件可以加载点云+图像。
  ```
- python tools/misc/browse_dataset.py /workspace/vic-competition/dair-v2x/configs/sv3d-veh/mvxnet/trainval_config.py --output-dir ./work-dirs/vic/veh/early-fusion/vis --task multi_modality-det
+ python tools/misc/browse_dataset.py /workspace/vic-competition/dair-v2x/configs/sv3d-veh/mvxnet/trainval_config.py --output-dir ./work-dirs/vic/veh-coop-all/vis --task multi_modality-det
  ```
 
 ## 3. 训练
@@ -168,8 +168,8 @@ python tools/train.py ../dair-v2x/configs/vic3d/late-fusion-multimodal/mvxnet/tr
 ## 4. 可视化训练log
 ```
 python tools/analysis_tools/analyze_logs.py plot_curve  \
-/workspace/vic-competition/mmdetection3d/work-dirs/vic/veh/train/20230126_211220.log.json \
---keys loss_cls loss_bbox \
+/workspace/vic-competition/mmdetection3d/work-dirs/vic/veh-coop-filted/train/pointpillars-car/20230207_194935.log.json \
+--keys loss_cls loss_bbox  loss \
 --out losses.png
 ```
 
@@ -253,6 +253,7 @@ zip ../test.zip ./*
 ## 4. 标注
 1. 联合标注里只有四类车，单端各类均有
 2. 预测出的box非长方体，不规则，但是作图要求长方体，因此图与实际预测有出入(论文考虑)
+3. 联合标注在世界坐标下，数据集加载时已转换至车端lidar坐标下
 
 ## 5.融合
 1. 对于单车类模型，其预测label为0，而数据集中label为2，需要对预测结果强制转换(model脚本)
@@ -276,32 +277,69 @@ zip ../test.zip ./*
         - match
         - fuse
             - diff<1 两个端的都很近，可考虑增加diff
+
 ## 2.前融合
-1. 过滤方法
-    - score过滤
-    - 过滤范围
-    - 中心点选取
-2. **模型精度比较**
-    
-range？
+- 修改pipe ———— 需要改回
+- 修改了传输点云的计算方式，若需要传输目标框，则改回
+- mvxnet和second是不是没有训练彻底？改一下类别数目？用coop数据集继续训练
+- 增加路端过滤模型
+    - 使用second(使用sv-inf预训练)
+- 测试benchmark中的模型和使用其预训练模型训练
+- **车端过滤单类需要单独置2**
+- sv-inf second模型精度挺高，考虑用其作为预训练模型重新训练一个路端 3类
+- 确定好路 车(融合)的模型后 组合验证
 
 
-# 评估结果
-> - bev-0.5-modest 
-## 1. 单端
+# Question:
+- 前融合训练集，训练时的val的map很低，ealy fusion eval时的map正常。eval是否将所有点云全部传输？
+    - 过滤后的传输仍然很低
+- mvxnet单类loss=0
+- range?
+
+- coop_val比vic_val低的原因：
+    - coop_val使用联合标注的label,vic_val使用单端label（）
+    - coop_val全部转车端lidar坐标评估，vic_val在各自端评估（影响不大）
+- 总体而言，联合标注label跟任何一个单端都不匹配，但这不影响使用inf过滤，inf只需正确检测到目标点云然后保留即可，与联合标注label无关。但车端最佳方案为使用**过滤后的融合点云**，和联合标注的label训练。
+- 使用vic-veh训练的模型与coop融合数据集训练的模型不仅在于点云多少，重要的是label不同，coop融合的label为评估label，更重要
+- 路端 准 即可，只需保证推理和训练同分布，即训练集制作时的过滤依据的label与路端模型训练的label是相同的
+- 车端 需要拟合label
+
+# Idea
+- 根据score决定过滤范围
+- 预测的box非长方体，中心点的确定方法可能有一定影响
+- **重新制作前融合训练集(使用过滤后的点融合)**
+- 改进路端精度，参考那个比赛
+
+# 评估结果 (bev-0.5-car-modest) 
+
+## 前融合更换：
+1. 数据集
+    - 数据集root
+    - split-data
+    - %15
+2. 模型
+    - 模型路径
+    - 传感器类型
+    - 是否是单类-eval.py
+3. 融合
+    - 是否过滤
+
+
+## 1. 单端(vic-veh/inf 验证集使用mmdetection3d中的test测试)
 ### 1.1 车端
 | view | num_class|model|eval_dataset | mAP| 
 |-|-|-|-|-|
-| veh | 3 | mvxnet_veh_3_vic_veh_base.pth| vic_ veh_val |70.0941|
+| veh | 3 | mvxnet_veh_3_sv_veh_base.pth| vic_ veh_val |70.0941|
 | veh | 3 | mvxnet_veh_3_vic_veh.pth| vic_ veh_val | 72.1771 |
 | veh | 3 | pointpillars_veh_3_vic_veh_base.pth| vic_veh_val| 63.3766|
 | veh | 3 | pointpillars_veh_3_vic_veh.pth| vic_veh_val| 72.3666|
 | veh | 1 | pointpillars_veh_1_vic_veh.pth| vic_veh_val| 72.2730|
+| veh | 3 | second_veh_3_sv_veh_base.pth| vic_veh_val| 62.5588|
 
 ### 1.2 路端
 | view | num_class|model|eval_dataset | mAP| 
 |-|-|-|-|-|
-| inf | 3 | mvxnet_inf_3_vic_inf_base.pth| vic_inf_val|35.6901|
+| inf | 3 | mvxnet_inf_3_sv_inf_base.pth| vic_inf_val|35.6901|
 | inf | 3 | mvxnet_inf_3_vic_inf.pth| vic_inf_val | 44.8988 |
 | inf | 3 | pointpillars_inf_3_vic_inf_base.pth| vic_inf_val | 54.4083 |
 | inf | 3 | pointpillars_inf_3_vic_inf.pth| vic_inf_val | 62.7306 |
@@ -317,14 +355,14 @@ range？
 |  late_fusion|  pointpillars_inf_3_vic_inf|mvxnet_veh_3_vic_veh| vic_coop_val |**65.20** |
 |  late_fusion|  pointpillars_inf_3_vic_inf|pointpillars_veh_3_vic_veh.pth| vic_coop_val |64.40 |
 |  late_fusion|  pointpillars_inf_3_vic_inf|pointpillars_veh_1_vic_veh.pth| vic_coop_val |30.11 |
-| late_fusion| mvxnet_inf_3_vic_inf_base.pth |mvxnet_veh_3_vic_veh_base.pth| vic_coop_test | 38.54241 |
+| late_fusion| mvxnet_inf_3_sv_inf_base.pth |mvxnet_veh_3_sv_veh_base.pth| vic_coop_test | 38.54241 |
 |  late_fusion| mvxnet_inf_3_vic_inf | mvxnet_veh_3_vic_veh | vic_coop_test | 44.32577 |
 |  late_fusiol| pointpillars_inf_3_vic_inf_base.pth |pointpillars_veh_3_vic_veh_base.pth| vic_coop_test | 50.08663 |
 |  late_fusion| pointpillars_inf_3_vic_inf_base.pth| mvxnet_veh_3_vic_veh| vic_coop_test | 57.0815|
 |  late_fusion|  pointpillars_inf_3_vic_inf|mvxnet_veh_3_vic_veh| vic_coop_test | **58.2941**|
 
 
-## 3.前融合
+## 3.前融合(vic-coop-veh 使用no fusion veh_only验证)
 
 | fusion_method | model|eval_dataset | mAP| ab_cost |
 |-|-|-|-|-|
@@ -342,19 +380,11 @@ range？
 |filted_early_fusion|pointpillars_inf_3_vic_inf.pth|pointpillars_veh_1_vic_coop_base.pth|vic_coop_va_15|-|-|1|
 
 
+# 记录
+1. pypcd读取的点云，使用open3d保存成pcd后 与bro生成的obj不同方向
+- 读取时的源数据不同，bro生成的点云和pypcd读取的点云数据方向就不同
 
-
-
-
-
-# 5
-
-pypcd读取的点云，使用open3d保存成pcd后 与bro生成的obj不同方向
-- obj pcd不同
-- 读取时的源数据不同
-
-可视化生成的obj坐标相同
-模型输出的box和源点云相同
+2. 063315路端没有 从联合标注中剔除
 划分：
 - 单车端train
 - 单路端test testA
@@ -362,9 +392,12 @@ pypcd读取的点云，使用open3d保存成pcd后 与bro生成的obj不同方�
 
 单路端数据集中没有
 联合标注有
+split.coop.train有
 
 相当于多创造了一个路端没有的样例
 
+3. 制作前融合数据集kitti create时 014338 样本有错误，从imagesets中剔除
+```
 raceback (most recent call last):
   File "tools/create_data.py", line 222, in <module>
     out_dir=args.out_dir)
@@ -377,14 +410,113 @@ raceback (most recent call last):
   File "/workspace/vic-competition/mmdetection3d/tools/data_converter/nuscenes_converter.py", line 551, in post_process_coords
     [coord for coord in img_intersection.exterior.coords])
 AttributeError: 'LineString' object has no attribute 'exterior'
+```
 
-014338 样本有错误，从imagesets中剔除
-063315路端没有 从联合标注中剔除
+4. 前融合训练集 由所有联合标注组成，根据split里的train val划分为训练验证
 
-前融合训练集 由所有联合标注组成，根据split里的train val划分为训练验证
+5. 训练时用的验证为路端传输的所有点云，评估测试时可以自定义过滤方法，因此二者有一定差异，使用评估时的指标，训练时的验证指标仅作参考
 
-训练时用的验证为路端传输的所有点云，评估测试时可以自定义过滤方法，因此二者有一定差异，使用评估指标，训练时的验证指标仅作参考
+6. 问题： 如果自己训练前融合模型，训练集和 评估的验证集不同，是否会影响效果？
+7. 前融合数据集的验证集可视化有问题
 
-问题： 如果自己训练前融合模型，训练集和 评估的验证集不同，是否会影响效果？
 
-验证集可视化有问题
+## compare socres(Rectangle center, Rectangle filt)
+- 使用box中心更准
+
+> 见图，
+在低点云数据传输的要求下，给予置信度高的box大的范围效果更好
+在高点云数据传输的要求下，给予置信度低的box大的范围效果更好
+总体而言，数据传输越多，效果越好?
+低数据要求下，我们应该确保传输的数据更加有效，因此更倾向传输置信度高的box
+高数据要求下，传输数据够多，可以保证置信度高的box传输足够的有效数据，同时，置信度较高的box预测较准，在较小的范围内即可覆盖有效数据，而置信度较低的box可能与真实box有偏差，因此基于较大的范围有利于提升精度。
+
+上述方法失败，可根据肘部法选取最佳点，并标注出base前融合的点作为比较
+### positive
+> range = size/2 * scores * k
+
+|view|inf_model|veh_model|eval_dataset|mAp|k|ab_cost|
+|-|-|-|-|-|-|-|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|62.50|1|12946.80|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|65.31|2|42317.47|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|66.87|3|73088.27|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|67.38|4|112148.67|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|67.84|5|154918.13|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|68.33|6|193681.20|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|68.29|7|241272.67|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|68.52|8|299966.27|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|68.64|9|357191.60|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|68.73|10|412541.47|
+
+|view|inf_model|veh_model|eval_dataset|mAp|k|ab_cost|
+|-|-|-|-|-|-|-|
+|ef|second_inf_1_vic_inf|second_veh_1_vic_coop| vic_coop_val_15|51.86|1|8483.73|
+|ef|second_inf_1_vic_inf|second_veh_1_vic_coop| vic_coop_val_15|52.96|2|38387.07|
+|ef|second_inf_1_vic_inf|second_veh_1_vic_coop| vic_coop_val_15|55.28|3|73392.00|
+|ef|second_inf_1_vic_inf|second_veh_1_vic_coop| vic_coop_val_15|55.28|4|112760.40|
+|ef|second_inf_1_vic_inf|second_veh_1_vic_coop| vic_coop_val_15|55.47|5|154136.27|
+|ef|second_inf_1_vic_inf|second_veh_1_vic_coop| vic_coop_val_15|55.73|6|192660.93|
+|ef|second_inf_1_vic_inf|second_veh_1_vic_coop| vic_coop_val_15|55.81|7|234559.47|
+|ef|second_inf_1_vic_inf|second_veh_1_vic_coop| vic_coop_val_15|55.64|8|286779.07|
+|ef|second_inf_1_vic_inf|second_veh_1_vic_coop| vic_coop_val_15|55.38|9| 344278.27|
+|ef|second_inf_1_vic_inf|second_veh_1_vic_coop| vic_coop_val_15|54.36|10|403690.40|
+|ef|second_inf_1_vic_inf|second_veh_1_vic_coop| vic_coop_val_15|53.73|11|449994.00|
+
+
+|view|inf_model|veh_model|eval_dataset|mAp|k|ab_cost|
+|-|-|-|-|-|-|-|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|62.01|1|8483.7|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|64.15|2|38387.07|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|65.69|3|73392.00|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|66.46|4|112760.407|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|66.81|5|154136.27|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|66.79|6|192660.93|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|67.01|7|234559.47|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|67.13|8|286779.07|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|67.56|9|344278.27|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|67.49|10|403690.40|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|67.75|11|449994.00|
+
+
+### negative
+> range = size/2 * (1/scores) * k
+
+|view|inf_model|veh_model|eval_dataset|mAp|k|ab_cost|
+|-|-|-|-|-|-|-|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|59.55|0.5|10599.20|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|64.04|0.8|36633.20 |
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|64.22|1|59758.40|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|68.02|2|174722.80|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|68.99|2.5|245263.47|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|69.19|3|321401.20|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|69.33|4|443917.87|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|67.84|5|154918.13|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|68.33|6|193681.20|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|68.29|7|241272.67|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|68.52|8|299966.27|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|68.64|9|357191.60|
+
+
+|view|inf_model|veh_model|eval_dataset|mAp|k|ab_cost|
+|-|-|-|-|-|-|-|
+|ef|second_inf_1_vic_inf|second_veh_1_vic_coop| vic_coop_val_15|49.58|0.3|4639.07|
+|ef|second_inf_1_vic_inf|second_veh_1_vic_coop| vic_coop_val_15|49.72|0.4|8773.73|
+|ef|second_inf_1_vic_inf|second_veh_1_vic_coop| vic_coop_val_15|50.25|0.5|14449.60|
+|ef|second_inf_1_vic_inf|second_veh_1_vic_coop| vic_coop_val_15|52.06|0.5|42100.40|
+|ef|second_inf_1_vic_inf|second_veh_1_vic_coop| vic_coop_val_15|52.59|1|66750.80|
+|ef|second_inf_1_vic_inf|second_veh_1_vic_coop| vic_coop_val_15|53.22|1.5|125854.93|
+|ef|second_inf_1_vic_inf|second_veh_1_vic_coop| vic_coop_val_15|54.66|2|188686.67|
+|ef|second_inf_1_vic_inf|second_veh_1_vic_coop| vic_coop_val_15|55.38|2.5|256824.53|
+|ef|second_inf_1_vic_inf|second_veh_1_vic_coop| vic_coop_val_15|54.99|3|323556.80|
+|ef|second_inf_1_vic_inf|second_veh_1_vic_coop| vic_coop_val_15|54.82|3.5|380658.00|
+|ef|second_inf_1_vic_inf|second_veh_1_vic_coop| vic_coop_val_15|54.33|4|435727.73|
+
+|view|inf_model|veh_model|eval_dataset|mAp|k|ab_cost|
+|-|-|-|-|-|-|-|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|59.83|0.5|14449.60|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|62.21|0.8|42100.40 |
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|62.61|1|66750.80|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|65.10|1.5|125854.93|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|66.13|2|188686.67|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|66.68|2.5|256824.53|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|66.88|3|323556.80|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|67.68|4|435727.73|

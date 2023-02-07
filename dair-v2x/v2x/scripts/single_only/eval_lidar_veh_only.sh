@@ -2,9 +2,9 @@ DATA="../data/DAIR-V2X/cooperative-vehicle-infrastructure"
 OUTPUT="../cache/vic-early-lidar"
 rm -r ../cache
 
-MODEL_ROOT='../configs/vic3d/early-fusion-pointcloud/pointpillars'
-MODEL_NAME='vic3d_earlyfusion_veh_pointpillars_67fe2b82320754481ef37f176b647e43.pth'
-CONFIG_NAME='trainval_config.py'
+MODEL_ROOT='../configs/vic3d/filted-early-fusion/pointcloud/3dssd'
+MODEL_NAME='3dssd_veh_1_vic_coop.pth'
+CONFIG_NAME='trainval_config_veh_1.py'
 
 SPLIT_DATA_PATH="../data/split_datas/cooperative-split-data.json"
 
@@ -22,6 +22,7 @@ python eval.py \
   --dataset vic-sync \
   --k $DELAY_K \
   --split val \
+  --set-veh-label \
   --split-data-path $SPLIT_DATA_PATH \
   --veh-config-path $MODEL_ROOT/$CONFIG_NAME \
   --veh-model-path $MODEL_ROOT/$MODEL_NAME \
@@ -29,6 +30,6 @@ python eval.py \
   --pred-class car \
   --sensortype lidar \
   --inf-sensortype lidar \
-  --veh-sensortype lidar\
+  --veh-sensortype lidar \
   --extended-range $EXTEND_RANGE_START -39.68 -3 $EXTEND_RANGE_END 39.68 1 \
   --overwrite-cache

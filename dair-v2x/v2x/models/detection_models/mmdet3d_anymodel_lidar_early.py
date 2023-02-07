@@ -124,7 +124,10 @@ class EarlyFusion(BaseModel):
                 filt,
                 prev_inf_frame_func if not self.args.no_comp else None,
             )
-            Inf_points = filt_point_by_boxes(Inf_points, pred_inf)
+            if self.args.set_inf_label:
+                for ii in range(len(pred_inf["labels_3d"])):
+                    pred_inf["labels_3d"][ii] = 2
+            Inf_points = filt_point_by_boxes(Inf_points, pred_inf, 2)
             # outfile = '/workspace/demo.json'
             # print(id)
             # with open(outfile,'w') as f:
@@ -142,19 +145,24 @@ class EarlyFusion(BaseModel):
             for j in range(3):
                 Inf_points.pc_data[i][j] = temp[j]
             Inf_points.pc_data[i][3] = Inf_points.pc_data[i][3] * 255
+        
         # 传送至车端与车端融合
+        self.pipe.send("inf_points", Inf_points.pc_data)
         concatenate_pcd2bin(Inf_points, Veh_points, osp.join(save_path, name + ".pcd"))
         vic_frame.veh_frame["pointcloud_path"] = osp.join("cache", name + ".pcd")
         pred, id_veh = self.model(vic_frame.vehicle_frame(), None, filt)
 
+        if self.args.set_veh_label:
+            for ii in range(len(pred["labels_3d"])):
+                pred["labels_3d"][ii] = 2
         # 使用单类模型融合推理时需要开启
         # Hard Code to change the prediction label
-        for ii in range(len(pred["labels_3d"])):
-            pred["labels_3d"][ii] = 2
+        # for ii in range(len(pred["labels_3d"])):
+        #     pred["labels_3d"][ii] = 2
 
-        self.pipe.send("boxes_3d", pred["boxes_3d"])
-        self.pipe.send("labels_3d", pred["labels_3d"])
-        self.pipe.send("scores_3d", pred["scores_3d"])
+        # self.pipe.send("boxes_3d", pred["boxes_3d"])
+        # self.pipe.send("labels_3d", pred["labels_3d"])
+        # self.pipe.send("scores_3d", pred["scores_3d"])
 
         return {
             "boxes_3d": np.array(pred["boxes_3d"]),
@@ -515,9 +523,9 @@ class LateFusionInf(nn.Module):
                         prev_frame_trans,
                         pred_filter,
                     )
-                self.pipe.send("prev_boxes", pred_dict["boxes_3d"])
-                self.pipe.send("prev_time_diff", delta_t)
-                self.pipe.send("prev_label", pred_dict["labels_3d"])
+                # self.pipe.send("prev_boxes", pred_dict["boxes_3d"])
+                # self.pipe.send("prev_time_diff", delta_t)
+                # self.pipe.send("prev_label", pred_dict["labels_3d"])
 
         return pred_dict, id
 

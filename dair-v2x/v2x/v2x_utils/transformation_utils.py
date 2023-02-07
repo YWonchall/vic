@@ -100,8 +100,6 @@ class Coord_transformation(object):
         self.delta_x = None
         self.delta_y = None
 
-    def __call__(self, point):
-
         path_all = {
             "path_root": self.path_root,
             "path_lidar2world": "infrastructure-side/calib/virtuallidar_to_world/" + self.infra_name + ".json",
@@ -109,8 +107,19 @@ class Coord_transformation(object):
             "path_novatel2world": "vehicle-side/calib/novatel_to_world/" + self.veh_name + ".json",
         }
 
-        rotation, translation = self.forward(self.from_coord, self.to_coord, path_all)
-        return self.point_transformation(point, rotation, translation)
+        self.rotation, self.translation = self.forward(self.from_coord, self.to_coord, path_all)
+
+    def __call__(self, point):
+
+        # path_all = {
+        #     "path_root": self.path_root,
+        #     "path_lidar2world": "infrastructure-side/calib/virtuallidar_to_world/" + self.infra_name + ".json",
+        #     "path_lidar2novatel": "vehicle-side/calib/lidar_to_novatel/" + self.veh_name + ".json",
+        #     "path_novatel2world": "vehicle-side/calib/novatel_to_world/" + self.veh_name + ".json",
+        # }
+
+        # rotation, translation = self.forward(self.from_coord, self.to_coord, path_all)
+        return self.point_transformation(point, self.rotation, self.translation)
 
     def forward(self, from_coord, to_coord, path_all):
         coord_list = ["Infrastructure_lidar", "World", "Vehicle_lidar"]
@@ -250,17 +259,17 @@ class Coord_transformation(object):
         return np.array(output)
 
     def single_point_transformation(self, input_point):
-        path_all = {
-            "path_root": self.path_root,
-            "path_lidar2world": "infrastructure-side/calib/virtuallidar_to_world/" + self.infra_name + ".json",
-            "path_lidar2novatel": "vehicle-side/calib/lidar_to_novatel/" + self.veh_name + ".json",
-            "path_novatel2world": "vehicle-side/calib/novatel_to_world/" + self.veh_name + ".json",
-        }
+        # path_all = {
+        #     "path_root": self.path_root,
+        #     "path_lidar2world": "infrastructure-side/calib/virtuallidar_to_world/" + self.infra_name + ".json",
+        #     "path_lidar2novatel": "vehicle-side/calib/lidar_to_novatel/" + self.veh_name + ".json",
+        #     "path_novatel2world": "vehicle-side/calib/novatel_to_world/" + self.veh_name + ".json",
+        # }
 
-        rotation, translation = self.forward(self.from_coord, self.to_coord, path_all)
+        # rotation, translation = self.forward(self.from_coord, self.to_coord, path_all)
         input_point = np.array(input_point).reshape(3, 1)
-        translation = np.array(translation).reshape(3, 1)
-        rotation = np.array(rotation).reshape(3, 3)
+        translation = np.array(self.translation).reshape(3, 1)
+        rotation = np.array(self.rotation).reshape(3, 3)
         output_point = np.dot(rotation, input_point).reshape(3, 1) + np.array(translation).reshape(3, 1)
 
         return output_point

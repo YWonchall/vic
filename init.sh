@@ -6,6 +6,7 @@ cd mmdetection3d
 pip install -e .
 cd ..
 pip uninstall pycocotools -y
+pip install pycocotools==2.0.1
 mim install mmpycocotools
 cd pypcd
 python setup.py install

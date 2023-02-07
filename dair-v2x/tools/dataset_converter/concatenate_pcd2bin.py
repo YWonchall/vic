@@ -24,7 +24,23 @@ def read_json(path_json):
 
 
 def concatenate_pcd2bin(path1, path2, path_save):
-    pc1 = pypcd.PointCloud.from_path(path1)
+    try:
+        pc1 = pypcd.PointCloud.from_path(path1)
+    except:
+        print(path1)
+        pc2 = pypcd.PointCloud.from_path(path2)
+        np_x2 = (np.array(pc2.pc_data["x"], dtype=np.float32)).astype(np.float32)
+        np_y2 = (np.array(pc2.pc_data["y"], dtype=np.float32)).astype(np.float32)
+        np_z2 = (np.array(pc2.pc_data["z"], dtype=np.float32)).astype(np.float32)
+        np_i2 = (np.array(pc2.pc_data["intensity"], dtype=np.float32)).astype(np.float32) / 255
+        np_x = np_x2
+        np_y = np_y2
+        np_z = np_z2
+        np_i = np_i2
+        points_32 = np.transpose(np.vstack((np_x, np_y, np_z, np_i)))
+        points_32.tofile(path_save)
+        return 0
+    
     pc2 = pypcd.PointCloud.from_path(path2)
 
     np_x1 = (np.array(pc1.pc_data["x"], dtype=np.float32)).astype(np.float32)

@@ -1,5 +1,5 @@
 dataset_type = "KittiDataset"
-data_root = "/workspace/vic-competition/dair-v2x/data/DAIR-V2X/cooperative-vehicle-infrastructure/vic3d-early-fusion-training"
+data_root = "/workspace/vic-competition/dair-v2x/data/DAIR-V2X/cooperative-vehicle-infrastructure/infrastructure-side"
 class_names = ["Car"]
 point_cloud_range = [0, -39.68, -3, 92.16, 39.68, 1]
 voxel_size = [0.16, 0.16, 4]
@@ -259,17 +259,17 @@ evaluation = dict(
     ],
 )
 
-lr = 3e-7
+lr = 3e-4
 optimizer = dict(type="AdamW", lr=lr, betas=(0.95, 0.99), weight_decay=0.01)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
-lr_config = dict(policy="step",step=[4])
+lr_config = dict(policy="step",step=[1,2])
 momentum_config = None # dict(policy="cyclic", target_ratio=(0.8947368421052632, 1), cyclic_times=1, step_ratio_up=0.4)
-runner = dict(type="EpochBasedRunner", max_epochs=5)
+runner = dict(type="EpochBasedRunner", max_epochs=3)
 checkpoint_config = dict(interval=1)
 log_config = dict(interval=50, hooks=[dict(type="TextLoggerHook"), dict(type="TensorboardLoggerHook")])
 dist_params = dict(backend="nccl")
 log_level = "INFO"
-load_from = "/workspace/vic-competition/mmdetection3d/work-dirs/vic/veh-coop-filted/train/pointpillars-car/latest.pth"
-resume_from = None #'/workspace/vic-competition/mmdetection3d/work-dirs/vic/veh-coop-filted/train/pointpillars-car/latest.pth'
+load_from = '/workspace/vic-competition/dair-v2x/configs/vic3d/filted-early-fusion/pointcloud/pointpillars/pointpillars_veh_1_vic_coop.pth'
+resume_from = None
 workflow = [("train", 1)]
 gpu_ids = range(0, 1)

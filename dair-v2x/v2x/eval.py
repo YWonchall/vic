@@ -39,9 +39,10 @@ def eval_vic(args, dataset, model, evaluator):
             filt,
             None if not hasattr(dataset, "prev_inf_frame") else dataset.prev_inf_frame,
         )
-        # 单类
-        for ii in range(len(pred["labels_3d"])):
-            pred["labels_3d"][ii] = 2
+        # if args.set_label:
+        #     # 单类推理开启
+        #     for ii in range(len(pred["labels_3d"])):
+        #         pred["labels_3d"][ii] = 2
         # prev_inf_frame用于async的路端
         evaluator.add_frame(pred, label)
         pipe.flush()
