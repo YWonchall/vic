@@ -1,5 +1,5 @@
 dataset_type = 'KittiDataset'
-data_root = '/workspace/vic-competition/dair-v2x/data/DAIR-V2X/cooperative-vehicle-infrastructure/vehicle-side/'
+data_root = '/workspace/vic-competition/dair-v2x/data/DAIR-V2X/cooperative-vehicle-infrastructure/vic3d-early-fusion-training-all'
 class_names = ['Car']
 point_cloud_range = [0, -40, -3, 70.4, 40, 1]
 input_modality = dict(use_lidar=True, use_camera=False)
@@ -17,7 +17,7 @@ model = dict(
     type='VoxelNet',
     voxel_layer=dict(
         max_num_points=5,
-        point_cloud_range=[0, -40, -3, 70.4, 40, 1],
+        point_cloud_range=point_cloud_range,
         voxel_size=[0.05, 0.05, 0.1],
         max_voxels=(16000, 40000)),
     voxel_encoder=dict(type='HardSimpleVFE'),
@@ -115,9 +115,9 @@ train_pipeline = [
         rot_range=[-0.78539816, 0.78539816],
         scale_ratio_range=[0.95, 1.05]),
     dict(
-        type='PointsRangeFilter', point_cloud_range=[0, -40, -3, 70.4, 40, 1]),
+        type='PointsRangeFilter', point_cloud_range=point_cloud_range),
     dict(
-        type='ObjectRangeFilter', point_cloud_range=[0, -40, -3, 70.4, 40, 1]),
+        type='ObjectRangeFilter', point_cloud_range=point_cloud_range),
     dict(type='PointShuffle'),
     dict(type='DefaultFormatBundle3D', class_names=['Car']),
     dict(type='Collect3D', keys=['points', 'gt_bboxes_3d', 'gt_labels_3d'])
@@ -143,7 +143,7 @@ test_pipeline = [
             dict(type='RandomFlip3D'),
             dict(
                 type='PointsRangeFilter',
-                point_cloud_range=[0, -40, -3, 70.4, 40, 1]),
+                point_cloud_range=point_cloud_range),
             dict(
                 type='DefaultFormatBundle3D',
                 class_names=['Car'],
@@ -162,7 +162,7 @@ eval_pipeline = [
     dict(type='Collect3D', keys=['points'])
 ]
 data = dict(
-    samples_per_gpu=4,
+    samples_per_gpu=16,
     workers_per_gpu=4,
     train=dict(
         type='RepeatDataset',
@@ -209,10 +209,10 @@ data = dict(
                     scale_ratio_range=[0.95, 1.05]),
                 dict(
                     type='PointsRangeFilter',
-                    point_cloud_range=[0, -40, -3, 70.4, 40, 1]),
+                    point_cloud_range=point_cloud_range),
                 dict(
                     type='ObjectRangeFilter',
-                    point_cloud_range=[0, -40, -3, 70.4, 40, 1]),
+                    point_cloud_range=point_cloud_range),
                 dict(type='PointShuffle'),
                 dict(type='DefaultFormatBundle3D', class_names=['Car']),
                 dict(
@@ -250,7 +250,7 @@ data = dict(
                     dict(type='RandomFlip3D'),
                     dict(
                         type='PointsRangeFilter',
-                        point_cloud_range=[0, -40, -3, 70.4, 40, 1]),
+                        point_cloud_range=point_cloud_range),
                     dict(
                         type='DefaultFormatBundle3D',
                         class_names=['Car'],
@@ -289,7 +289,7 @@ data = dict(
                     dict(type='RandomFlip3D'),
                     dict(
                         type='PointsRangeFilter',
-                        point_cloud_range=[0, -40, -3, 70.4, 40, 1]),
+                        point_cloud_range=point_cloud_range),
                     dict(
                         type='DefaultFormatBundle3D',
                         class_names=['Car'],
@@ -333,7 +333,7 @@ log_config = dict(
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = '/workspace/vic-competition/mmdetection3d/work-dirs/vic/veh/early-fusion/second-car/train'
-load_from = "/workspace/vic-competition/dair-v2x/configs/vic3d/filted-early-fusion/pointcloud/second/second_veh_3_sv_veh_base.pth"
+load_from = "/workspace/vic-competition/dair-v2x/configs/vic3d/filted-early-fusion/pointcloud/second/second_veh_1_vic_coop.pth"
 resume_from = None
 workflow = [('train', 1)]
 gpu_ids = range(0, 1)

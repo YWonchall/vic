@@ -1,6 +1,7 @@
 dataset_type = "KittiDataset"
 data_root = "/workspace/vic-competition/dair-v2x/data/DAIR-V2X/cooperative-vehicle-infrastructure/vic3d-early-fusion-training"
 class_names = ["Car"]
+# point_cloud_range = [0, -39.68, -3, 100, 39.68, 1]
 point_cloud_range = [0, -39.68, -3, 92.16, 39.68, 1]
 voxel_size = [0.16, 0.16, 4]
 length = int((point_cloud_range[3] - point_cloud_range[0]) / voxel_size[0])

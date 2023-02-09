@@ -87,7 +87,7 @@ def get_filted_index(pointclouds, boxes, scores):
     retain_index = np.full(len(points), False, dtype=bool)
     for i in range(len(center)):
         points_dis = np.sum((points-center[i])**2,axis=1)**0.5
-        retain_ind = points_dis < boxes_dis[i]*0.8
+        retain_ind = points_dis < boxes_dis[i]
         retain_index += retain_ind
     return retain_index
     # point_cloud = o3d.geometry.PointCloud()
@@ -100,11 +100,13 @@ def get_filted_index2(pointclouds, boxes,scores):
     # boxes: [N,8,3]
     # scores : [N]
     center,size = box2info(boxes) # N 3
-    # weights = np.repeat(scores.reshape(-1,1),3,axis=1)
+    k = (1-0.5) / (np.max(scores)-np.min(scores))
+    weights = 0.5 + k*(scores-np.min(scores))
+    weights = np.repeat(weights.reshape(-1,1),3,axis=1)
     # centers = np.repeat(center.reshape(-1,1,3),8,axis=1)
     # boxes_dis = np.sum((centers-boxes)**2,axis=2)**0.5
     # boxes_dis = np.max(np.sum((centers-boxes)**2,axis=2)**0.5,axis=1) # N
-    filt_range = (size/2)*2
+    filt_range = (size/2)*12
     # for i in range(len(boxes)):
     #     trans = [boxes[i][7][0],boxes[i][7][1],boxes[i][7][2]]
     #     draw_mesh(size[i][0],size[i][1],size[i][2],trans,f'box_{i}.obj')
@@ -120,6 +122,7 @@ def get_filted_index2(pointclouds, boxes,scores):
     # point_cloud.points = o3d.utility.Vector3dVector(points[retain_index])
     # # print(np.asarray(point_cloud.points)[:10])
     # o3d.io.write_point_cloud('./retain_final.pcd',point_cloud)
+
 def draw_mesh(size,translate,filename):
   
     mesh_box = o3d.geometry.TriangleMesh.create_box(width=size[0],
@@ -154,7 +157,7 @@ def filt_point_by_boxes(pcd, pred, cla_id):
     # point_cloud.points = o3d.utility.Vector3dVector(pcd_array[:,:3])
     # o3d.io.write_point_cloud(folder_path+f'/source_points.pcd',point_cloud)
 
-    retain_ind = get_filted_index(pcd_array,boxes,scores)
+    retain_ind = get_filted_index2(pcd_array,boxes,scores)
     pcd.pc_data = pcd.pc_data[retain_ind]
     # filted_pcd_array = pcd.pc_data.view(np.float32).reshape(pcd.pc_data.shape+(-1,))
     # save_mesh(filted_pcd_array, boxes, folder_path)

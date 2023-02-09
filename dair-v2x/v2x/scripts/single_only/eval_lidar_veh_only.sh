@@ -2,8 +2,8 @@ DATA="../data/DAIR-V2X/cooperative-vehicle-infrastructure"
 OUTPUT="../cache/vic-early-lidar"
 rm -r ../cache
 
-MODEL_ROOT='../configs/vic3d/filted-early-fusion/pointcloud/3dssd'
-MODEL_NAME='3dssd_veh_1_vic_coop.pth'
+MODEL_ROOT='../configs/vic3d/filted-early-fusion/pointcloud/second'
+MODEL_NAME='second_veh_1_vic_coop.pth'
 CONFIG_NAME='trainval_config_veh_1.py'
 
 SPLIT_DATA_PATH="../data/split_datas/cooperative-split-data.json"

@@ -681,7 +681,7 @@ class PointCloud(object):
         return point_cloud_from_fileobj(fileobj)
 
     @staticmethod
-    def from_buffer(buf):
+    def from_buffer(buf):d
         return point_cloud_from_buffer(buf)
 
     @staticmethod

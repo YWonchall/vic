@@ -520,3 +520,180 @@ AttributeError: 'LineString' object has no attribute 'exterior'
 |ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|66.68|2.5|256824.53|
 |ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|66.88|3|323556.80|
 |ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|67.68|4|435727.73|
+
+
+# Report Table
+## compare models
+### inf
+| view |model|eval_dataset | mAP|
+|-|-|-|-|
+|inf|pointpillars_inf_3_vic_inf_base| vic_inf_val| 54.4083|
+|inf|pointpillars_inf_3_vic_inf| vic_inf_val| 62.7306|
+|inf|pointpillars_inf_1_vic_inf| vic_inf_val| 62.3176|
+|-|-|-|-|
+|inf|second_inf_3_sv_inf_base| vic_inf_val|36.1881|
+|inf|second_inf_1_vic_inf| vic_inf_val|44.6465 |
+|-|-|-|-|
+|inf|3dssd_inf_1_vic_inf| vic_inf_val|43.3176|
+|-|-|-|-|
+|inf|mvxnet_inf_3_sv_inf_base| vic_inf_val|35.6908|
+|inf|mvxnet_inf_3_vic_inf| vic_inf_val|44.5898|
+
+### pointpillars
+|view|inf_model|veh_model|eval_dataset|mAp|ab_cost|
+|-|-|-|-|-|-|
+|veh_only|-|pointpillars_veh_1_vic_coop|vic_coop_val_15|59.04|0|
+|ef_all|-|pointpillars_veh_1_vic_coop|vic_coop_val_15|69.56|955363.60|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|68.49|57730.80|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|66.91|58359.20|
+### second
+|view|inf_model|veh_model|eval_dataset|mAp|ab_cost|
+|-|-|-|-|-|-|
+|veh_only|-|second_veh_1_vic_coop|vic_coop_val_15|49.53|0|
+|ef_base|-|second_veh_1_vic_coop|vic_coop_val_15|51.1|955363.60|
+|ef|pointpillars_inf_1_vic_inf|second_veh_1_vic_coop| vic_coop_val_15|57.23||
+|ef|second_inf_1_vic_inf|second_veh_1_vic_coop| vic_coop_val_15|55.72||
+### 3dssd
+|view|inf_model|veh_model|eval_dataset|mAp|ab_cost|
+|-|-|-|-|-|-|
+|veh_only|-|3dssd_veh_1_vic_coop|vic_coop_val_15|47.05|0|
+|ef_base|-|3dssd_veh_1_vic_coop|vic_coop_val_15|49.38|955363.60|
+|ef|pointpillars_inf_1_vic_inf|3dssd_veh_1_vic_coop| vic_coop_val_15|54.08||
+|ef|second_inf_1_vic_inf|3dssd_veh_1_vic_coop| vic_coop_val_15|52.70|58359.20|
+### mvxnet
+|view|inf_model|veh_model|eval_dataset|mAp|ab_cost|
+|-|-|-|-|-|-|
+|veh_only|-|pointpillars_veh_1_vic_coop|vic_coop_val_15|50.64|0|
+|ef_base|-|pointpillars_veh_1_vic_coop|vic_coop_val_15|56.21|955363.60|
+|ef|pointpillars_inf_1_vic_inf|mvxnet_veh_3_vic_coop| vic_coop_val_15|56.22||
+|ef|second_inf_1_vic_inf|mvxnet_veh_3_vic_coop| vic_coop_val_15|55.63||
+
+
+
+> range = (size/2) / weights * k
+
+|view|inf_model|veh_model|eval_dataset|mAP|k|ab_cost|0.3|0.7|
+|-|-|-|-|-|-|-|-|-|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|59.63|0.5|5325.07|-|-|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|61.27|0.6|8637.87|65.98|52.35|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|64.00|0.7|13529.07|68.30|54.83|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|65.88|0.8|21490.13 |-|-|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|66.81|0.9|33491.73 |-|-|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15| 66.98|1|40050.53|-|-|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|68.34|1.5|68984.00|70.80|59.03|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|68.64|2|97590.27|71.08|59.38|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|68.20|2.5|130454.00|71.27|59.77|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|68.75|3|165810.80|71.59|59.80|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|68.50|3.5|201105.33|-|-|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|68.70|4.5| 287026.13|-|-|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|68.82|5|330502.53|71.80|59.99|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|69.43|6|420860.00|72.04|60.04|
+
+
+# sp(支持)
+> range = size/2 * k
+
+|view|inf_model|veh_model|eval_dataset|mAp|k|ab_cost|
+|-|-|-|-|-|-|-|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|59.81|0.6|4079.33|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|64.49|0.8|11504.80|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|65.41|1|28335.87|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|66.90|1.5|46583.33|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|66.90|2|61524.53|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|66.93|3|95363.47|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|67.23|4|141641.73|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|67.16|5|186484.27|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|67.03|6|236614.80|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|67.32|8|379190.53|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|67.80|10|510921.60|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|68.35|12|603691.20|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|68.98|16|734096.80|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|69.56|-|955363.60|
+> range = size/2 * weights * k
+
+|view|inf_model|veh_model|eval_dataset|mAp|k|ab_cost|0.3|0.7|
+|-|-|-|-|-|-|-|-|-|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|61.17|0.7|4404.27|-|-|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|62.97|0.8|7572.80|-|-|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|64.53|0.9|13890.40|-|-|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|64.06|1|21310.67|-|-|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|65.04|1.2|30232.27|68.61|56.26|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|66.39|1.5|39565.47|69.67|57.23|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|66.59|2|53644.807|69.95|57.25|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|66.90|3|81435.20|70.30|57.76|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|66.76|4|114642.53|-|-|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|67.15|5|154126.27|70.58|58.07|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|67.23|6|194729.60|70.70|28.08|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|-|7|234559.47|-|-|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|67.61|8|304273.87|-|-|
+
+
+> range = (size/2)*(1.5-weights) * k
+
+|view|inf_model|veh_model|eval_dataset|mAp|k|ab_cost|0.3|0.7|
+|-|-|-|-|-|-|-|-|-|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|60.89|1|7147.60|66.10|52.38|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|63.05|1.2|10792.00|67.31|53.66|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|64.94|1.5|18960.00|68.80|55.32|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|66.62|2|37972.53|69.87|56.96|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|66.93|2.5|50689.20|69.88|57.17|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|67.06|3|62111.07|70.04|57.46|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|67.27|4|87707.20|70.58|58.06|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|67.06|5|115503.07|70.59|57.92|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|67.07|6|146000.27|70.39|58.10|
+|ef|second_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|67.14|7|177673.20|70368|57.88|
+
+
+
+> range = size/2 * weights * k
+
+|view|inf_model|veh_model|eval_dataset|mAp|k|ab_cost|0.3|0.7|
+|-|-|-|-|-|-|-|-|-|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|62.44|0.7|5898.13|66.72|53.28|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|63.96|0.8|10229.33|67.93|54.75|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|65.45|0.9|18760.27|68.61|56.49|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|66.35|1|26970.00|-|-|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|68.00|1.5|47342.93|70.80|58.57|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|68.21|2|63246.27|70.82|59.20|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|68.07|3|96702.40|71.10|59.57|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|68.35|4|142158.67|-|-|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|68.51|5|186383.07|71.47|59.85|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|68.58|6|234958.80|71.47|60.05|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|68.69|7|297215.73|71.46|60.07|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|68.70|8|364291.47|-|-|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|68.73|9|432564.80|71.37|60.10|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|-|10|412541.47|-|-|
+
+
+
+> range = (size/2)*(1.5- weights) * k
+
+|view|inf_model|veh_model|eval_dataset|mAP|k|ab_cost|0.3|0.7|
+|-|-|-|-|-|-|-|-|-|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|59.66|1|6078.67|64.70|52.08|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|65.67|1.5|19437.33|69.43|57.48|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|66.94|2|42054.67|70.18|58.02|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|68.05|2.5|57837.60|70.62|59.09|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|68.32|3|71918.80|70.89|58.99|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|68.71|3.5|86409.20|71.16|59.74|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|68.71|4|101864.00|71.22|59.70|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|68.44|4.5| 119074.67|71.19|59.73|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|68.46|5|137300.40|71.44|59.68|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|68.62|6| 173956.67|71.52|59.86|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|68.48|6| 211291.47|71.57|59.91|
+|ef|pointpillars_inf_1_vic_inf|pointpillars_veh_1_vic_coop| vic_coop_val_15|68.82|9| 304269.87|71.87|59.98|
+
+# sm(支持)
+> range = size/2 * k
+
+|view|inf_model|veh_model|eval_dataset|mAp|k|ab_cost|
+|-|-|-|-|-|-|-|
+|ef|second_inf_1_vic_inf|mvxnet_veh_3_vic_coop| vic_coop_val_15|51.65|0.6|4079.33|
+|ef|second_inf_1_vic_inf|mvxnet_veh_3_vic_coop| vic_coop_val_15|54.13|0.8|11504.80|
+|ef|second_inf_1_vic_inf|mvxnet_veh_3_vic_coop| vic_coop_val_15|55.08|1|28335.87|
+|ef|second_inf_1_vic_inf|mvxnet_veh_3_vic_coop| vic_coop_val_15|55.20|2|61524.53|
+|ef|second_inf_1_vic_inf|mvxnet_veh_3_vic_coop| vic_coop_val_15|55.49|3|95363.47|
+|ef|second_inf_1_vic_inf|mvxnet_veh_3_vic_coop| vic_coop_val_15|55.50|5|186484.27|
+|ef|second_inf_1_vic_inf|mvxnet_veh_3_vic_coop| vic_coop_val_15|55.88|8|379190.53|
+|ef|second_inf_1_vic_inf|mvxnet_veh_3_vic_coop| vic_coop_val_15|56.18|12|603691.33|
+|ef|second_inf_1_vic_inf|mvxnet_veh_3_vic_coop| vic_coop_val_15|56.21|-|955363.60|
