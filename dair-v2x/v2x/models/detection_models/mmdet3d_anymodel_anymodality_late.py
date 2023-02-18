@@ -186,9 +186,13 @@ class LateFusionInf(nn.Module):
             # 2.4
             # 2-3
             pred_dict, id = self.pred(data, trans, pred_filter)
+        if self.args.set_inf_label:
+            for ii in range(len(pred_dict["labels_3d"])):
+                pred_dict["labels_3d"][ii] = 2
         self.pipe.send("boxes", pred_dict["boxes_3d"])
         self.pipe.send("score", pred_dict["scores_3d"])
         self.pipe.send("label", pred_dict["labels_3d"])
+
 
         if prev_inf_frame_func is not None:
             prev_frame, delta_t = prev_inf_frame_func(id, sensortype=self.args.inf_sensortype)
@@ -337,6 +341,9 @@ class LateFusionVeh(nn.Module):
                 device=self.args.device,
             )
             pred_dict, id = self.pred(data, trans, pred_filter)
+        if self.args.set_veh_label:
+            for ii in range(len(pred_dict["labels_3d"])):
+                pred_dict["labels_3d"][ii] = 2
         return pred_dict, id
 
 
@@ -376,7 +383,7 @@ class LateFusion(BaseModel):
             prev_inf_frame_func if not self.args.no_comp else None,
         )
         pred_dict, id_veh = self.veh_model(vic_frame.vehicle_frame(), None, filt)
-
+        
         # logger.info("running late fusion...")
         pred_inf = BBoxList(
             np.array(self.pipe.receive("boxes")),
@@ -384,6 +391,7 @@ class LateFusion(BaseModel):
             np.array(self.pipe.receive("label")),
             np.array(self.pipe.receive("score")),
         )
+        
         pred_veh = BBoxList(
             np.array(pred_dict["boxes_3d"]),
             None,
@@ -417,8 +425,8 @@ class LateFusion(BaseModel):
         ind_inf, ind_veh, cost = matcher.match(pred_inf, pred_veh)
         logger.debug("matched boxes: {}, {}".format(ind_inf, ind_veh))
         # Q2, fuse
-        fuser = MLPFuser(perspective="vehicle", trust_type="main", retain_type="all")
-        # fuser = BasicFuser(perspective="vehicle", trust_type="max", retain_type="all")
+        # fuser = MLPFuser(perspective="vehicle", trust_type="main", retain_type="all")
+        fuser = BasicFuser(perspective="vehicle", trust_type="main", retain_type="all")
         result = fuser.fuse(pred_inf, pred_veh, ind_inf, ind_veh)
         result["inf_id"] = id_inf
         result["veh_id"] = id_veh

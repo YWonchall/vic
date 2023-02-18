@@ -12,7 +12,7 @@ class Channel(object):
     def send(self, key, val):
         self.data[key] = val
         if isinstance(val, np.ndarray):
-            cur_bytes = val.size*4*4 
+            cur_bytes = val.size*8
             # val.size*4*4 B
         elif type(val) in [int, float]:
             cur_bytes = 8

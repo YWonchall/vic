@@ -8,9 +8,9 @@ INFRA_MODEL_PATH="../configs/vic3d/filted-early-fusion/pointcloud/pointpillars"
 INFRA_CONFIG_NAME="trainval_config_inf_1.py"
 INFRA_MODEL_NAME="pointpillars_inf_1_vic_inf.pth"
 # 3
-VEHICLE_MODEL_PATH="../configs/vic3d/filted-early-fusion/pointcloud/second"
+VEHICLE_MODEL_PATH="../configs/vic3d/filted-early-fusion/pointcloud/pointpillars"
 VEHICLE_CONFIG_NAME="trainval_config_veh_1.py"
-VEHICLE_MODEL_NAME="second_veh_1_vic_coop.pth"
+VEHICLE_MODEL_NAME="pointpillars_veh_1_vic_coop.pth"
 # 4
 SPLIT_DATA_PATH="../data/split_datas/cooperative-split-data.json"
 

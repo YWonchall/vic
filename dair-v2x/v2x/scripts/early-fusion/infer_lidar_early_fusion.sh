@@ -1,11 +1,11 @@
 DATA="../data/DAIR-V2X/cooperative-vehicle-infrastructure-test"
-OUTPUT="../work-dirs/output/vic-early-lidar-pointpillars-test"
+OUTPUT="../work-dirs/filted-early-fusion/"
 rm -r ../cache
 rm -r $OUTPUT
 
 INFRA_MODEL_PATH="../configs/vic3d/filted-early-fusion/pointcloud/pointpillars"
-INFRA_CONFIG_NAME="trainval_config_inf_3.py"
-INFRA_MODEL_NAME="pointpillars_inf_3_vic_inf.pth" #"sv3d_inf_mvxnet_c2271983b04b73e573486fcbc559c31e.pth"
+INFRA_CONFIG_NAME="trainval_config_inf_1.py"
+INFRA_MODEL_NAME="pointpillars_inf_1_vic_inf.pth"
 # 3
 VEHICLE_MODEL_PATH="../configs/vic3d/filted-early-fusion/pointcloud/pointpillars"
 VEHICLE_CONFIG_NAME="trainval_config_veh_1.py"
@@ -27,7 +27,8 @@ python infer.py \
   --model $FUSION_METHOD \
   --dataset vic-sync \
   --k $DELAY_K \
-  --set-label \
+  --set-inf-label \
+  --set-veh-label \
   --split test \
   --test \
   --split-data-path $SPLIT_DATA_PATH \

@@ -162,8 +162,8 @@ eval_pipeline = [
     dict(type='Collect3D', keys=['points'])
 ]
 data = dict(
-    samples_per_gpu=16,
-    workers_per_gpu=4,
+    samples_per_gpu=12,
+    workers_per_gpu=6,
     train=dict(
         type='RepeatDataset',
         times=2,
@@ -316,15 +316,13 @@ evaluation = dict(
             with_label=False),
         dict(type='Collect3D', keys=['points'])
     ])
-lr = 3e-4
-optimizer = dict(
-    type='AdamW', lr=lr, betas=(0.95, 0.99), weight_decay=0.01)
+lr = 0.0018
+optimizer = dict(type="AdamW", lr=0.0018, betas=(0.95, 0.99), weight_decay=0.01)
 optimizer_config = dict(grad_clip=dict(max_norm=10, norm_type=2))
-lr_config = dict(
-    policy='step',
-    step=[1,2])
-momentum_config = None
-runner = dict(type='EpochBasedRunner', max_epochs=3)
+lr_config = dict(policy="cyclic", target_ratio=(10, 0.0001), cyclic_times=1, step_ratio_up=0.4)
+momentum_config = dict(policy="cyclic", target_ratio=(0.8947368421052632, 1), cyclic_times=1, step_ratio_up=0.4)
+runner = dict(type="EpochBasedRunner", max_epochs=40)
+
 checkpoint_config = dict(interval=1)
 log_config = dict(
     interval=50,
@@ -334,6 +332,6 @@ dist_params = dict(backend='nccl')
 log_level = 'INFO'
 work_dir = '/workspace/vic-competition/mmdetection3d/work-dirs/vic/veh/early-fusion/second-car/train'
 load_from = "/workspace/vic-competition/dair-v2x/configs/vic3d/filted-early-fusion/pointcloud/second/second_veh_1_vic_coop.pth"
-resume_from = None
+resume_from = "/workspace/vic-competition/mmdetection3d/work-dirs/vic-coop-all/train/second-carr/latest.pth"
 workflow = [('train', 1)]
 gpu_ids = range(0, 1)

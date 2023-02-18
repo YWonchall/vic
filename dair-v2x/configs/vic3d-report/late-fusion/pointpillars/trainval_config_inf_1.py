@@ -1,7 +1,6 @@
 dataset_type = "KittiDataset"
-data_root = "/workspace/vic-competition/dair-v2x/data/DAIR-V2X/cooperative-vehicle-infrastructure/vic3d-early-fusion-training-all"
+data_root = "/workspace/vic-competition/dair-v2x/data/DAIR-V2X/cooperative-vehicle-infrastructure/infrastructure-side"
 class_names = ["Car"]
-# point_cloud_range = [0, -39.68, -3, 100, 39.68, 1]
 point_cloud_range = [0, -39.68, -3, 92.16, 39.68, 1]
 voxel_size = [0.16, 0.16, 4]
 length = int((point_cloud_range[3] - point_cloud_range[0]) / voxel_size[0])
@@ -135,8 +134,8 @@ eval_pipeline = [
     dict(type="Collect3D", keys=["points"]),
 ]
 data = dict(
-    samples_per_gpu=8,
-    workers_per_gpu=6,
+    samples_per_gpu=6,
+    workers_per_gpu=4,
     train=dict(
         type="RepeatDataset",
         times=2,
@@ -260,17 +259,17 @@ evaluation = dict(
     ],
 )
 
-lr = 0.001
-optimizer = dict(type="AdamW", lr=0.001, betas=(0.95, 0.99), weight_decay=0.01)
+lr = 3e-4
+optimizer = dict(type="AdamW", lr=lr, betas=(0.95, 0.99), weight_decay=0.01)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
-lr_config = dict(policy="cyclic", target_ratio=(10, 0.0001), cyclic_times=1, step_ratio_up=0.4)
-momentum_config = dict(policy="cyclic", target_ratio=(0.8947368421052632, 1), cyclic_times=1, step_ratio_up=0.4)
-runner = dict(type="EpochBasedRunner", max_epochs=40)
-checkpoint_config = dict(interval=5)
+lr_config = dict(policy="step",step=[1,2])
+momentum_config = None # dict(policy="cyclic", target_ratio=(0.8947368421052632, 1), cyclic_times=1, step_ratio_up=0.4)
+runner = dict(type="EpochBasedRunner", max_epochs=3)
+checkpoint_config = dict(interval=1)
 log_config = dict(interval=50, hooks=[dict(type="TextLoggerHook"), dict(type="TensorboardLoggerHook")])
 dist_params = dict(backend="nccl")
 log_level = "INFO"
-load_from = "/workspace/vic-competition/dair-v2x/configs/vic3d/filted-early-fusion/pointcloud/pointpillars/pointpillars_veh_1_vic_coop.pth"
-resume_from = None #'/workspace/vic-competition/mmdetection3d/work-dirs/vic/veh-coop-filted/train/pointpillars-car/latest.pth'
+load_from = '/workspace/vic-competition/dair-v2x/configs/vic3d/filted-early-fusion/pointcloud/pointpillars/pointpillars_veh_1_vic_coop.pth'
+resume_from = None
 workflow = [("train", 1)]
 gpu_ids = range(0, 1)

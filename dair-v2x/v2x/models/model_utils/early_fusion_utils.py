@@ -3,6 +3,7 @@ import json
 import numpy as np
 from pypcd import pypcd
 import open3d as o3d
+import random
 
 def box2info(boxes):
     num_boxes = boxes.shape[0]
@@ -77,6 +78,10 @@ def get_filted_index(pointclouds, boxes, scores):
     # pointclouds: [N,4]
     # boxes: [M,8,3]
     # scores : [N]
+    retain_index = scores > 0.4
+    boxes = boxes[retain_index]
+    scores = scores[retain_index]
+
     center,size = box2info(boxes) # N 3
     centers = np.repeat(center.reshape(-1,1,3),8,axis=1)
     # for i in range(len(boxes)):
@@ -99,14 +104,18 @@ def get_filted_index2(pointclouds, boxes,scores):
     # pointclouds: [M,4]
     # boxes: [N,8,3]
     # scores : [N]
+    retain_index = scores > 0.4
+    boxes = boxes[retain_index]
+    scores = scores[retain_index]
+
     center,size = box2info(boxes) # N 3
-    k = (1-0.5) / (np.max(scores)-np.min(scores))
-    weights = 0.5 + k*(scores-np.min(scores))
-    weights = np.repeat(weights.reshape(-1,1),3,axis=1)
+    # k = (1-0.5) / (np.max(scores)-np.min(scores))
+    # weights = 0.5 + k*(scores-np.min(scores))
+    # weights = np.repeat(weights.reshape(-1,1),3,axis=1)
     # centers = np.repeat(center.reshape(-1,1,3),8,axis=1)
     # boxes_dis = np.sum((centers-boxes)**2,axis=2)**0.5
     # boxes_dis = np.max(np.sum((centers-boxes)**2,axis=2)**0.5,axis=1) # N
-    filt_range = (size/2)*12
+    filt_range = (size/2)*1.5
     # for i in range(len(boxes)):
     #     trans = [boxes[i][7][0],boxes[i][7][1],boxes[i][7][2]]
     #     draw_mesh(size[i][0],size[i][1],size[i][2],trans,f'box_{i}.obj')
@@ -159,6 +168,10 @@ def filt_point_by_boxes(pcd, pred, cla_id):
 
     retain_ind = get_filted_index2(pcd_array,boxes,scores)
     pcd.pc_data = pcd.pc_data[retain_ind]
+    ratio = 0.5
+    seq = np.arange(len(pcd.pc_data)).tolist()
+    keep = random.sample(seq,int(len(seq)*ratio))
+    pcd.pc_data = pcd.pc_data[keep]
     # filted_pcd_array = pcd.pc_data.view(np.float32).reshape(pcd.pc_data.shape+(-1,))
     # save_mesh(filted_pcd_array, boxes, folder_path)
     return pcd

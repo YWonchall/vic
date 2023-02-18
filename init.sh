@@ -10,6 +10,7 @@ pip install pycocotools==2.0.1
 mim install mmpycocotools
 cd pypcd
 python setup.py install
+pip install python-lzf==0.2.4
 cd ..
 pip install seaborn
 # pip install vtk==8.1.2

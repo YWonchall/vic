@@ -49,12 +49,9 @@ def eval_vic(args, dataset, model):
             filt,
             None if not hasattr(dataset, "prev_inf_frame") else dataset.prev_inf_frame,
         )
-        if args.set_label:
-            # 单类推理开启
-            for ii in range(len(pred["labels_3d"])):
-                pred["labels_3d"][ii] = 2
+
         # evaluator.add_frame(pred, label)
-        pipe.flush()
+        
         # pred["label"] = label["boxes_3d"]   # world -> vehicle lidar 后的坐标
         # pred["veh_id"] = veh_id
         outfile = osp.join(args.output, "result", veh_id + '.json')
@@ -63,11 +60,11 @@ def eval_vic(args, dataset, model):
             pred.pop('veh_id')
             pred.pop('inf_boxes')
         
-        pred['ab_cost'] = pipe.average_bytes()
+        pred['ab_cost'] = pipe.cur_bytes
         # save_pkl(pred, osp.join(args.output, "result", pred["veh_id"] + ".pkl"))
         with open(outfile,'w') as f:
             json.dump(pred,f,cls=NumpyEncoder)
-
+        pipe.flush()
     print("Average Communication Cost = %.2lf Bytes" % (pipe.average_bytes()))
 
 
