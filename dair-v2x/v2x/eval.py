@@ -25,10 +25,11 @@ from models.model_utils import Channel
 def eval_vic(args, dataset, model, evaluator):
     idx = -1
     data_arr = []
+    # for VICFrame, label, filt in dataset:
     for VICFrame, label, filt in tqdm(dataset):
         idx += 1
-        if idx % 15 != 0:
-            continue
+        # if idx % 15 != 0:
+        #     continue
         try:
             veh_id = dataset.data[idx][0]["vehicle_pointcloud_path"].split("/")[-1].replace(".pcd", "")
         except Exception:

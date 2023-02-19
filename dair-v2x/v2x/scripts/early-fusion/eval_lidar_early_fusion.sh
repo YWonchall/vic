@@ -4,13 +4,13 @@ OUTPUT="../cache/vic-early-lidar"
 rm -r $OUTPUT
 rm -r ../cache
 # 2 使用单类需要注意类别处理
-INFRA_MODEL_PATH="../configs/vic3d/filted-early-fusion/pointcloud/pointpillars"
+INFRA_MODEL_PATH="../configs/vic3d-report/early-fusion/pointpillars"
 INFRA_CONFIG_NAME="trainval_config_inf_1.py"
-INFRA_MODEL_NAME="pointpillars_inf_1_vic_inf.pth"
+INFRA_MODEL_NAME="pointpillars_inf.pth"
 # 3
-VEHICLE_MODEL_PATH="../configs/vic3d/filted-early-fusion/pointcloud/pointpillars"
+VEHICLE_MODEL_PATH="../configs/vic3d-report/early-fusion/pointpillars"
 VEHICLE_CONFIG_NAME="trainval_config_veh_1.py"
-VEHICLE_MODEL_NAME="pointpillars_veh_1_vic_coop.pth"
+VEHICLE_MODEL_NAME="pointpillars_veh.pth"
 # 4
 SPLIT_DATA_PATH="../data/split_datas/cooperative-split-data.json"
 
@@ -23,6 +23,7 @@ EXTEND_RANGE_END=100 #$5
 # sensortype用于读取数据集
 # 5 sensortype
 python eval.py \
+  --n 8 \
   --input $DATA \
   --output $OUTPUT \
   --model $FUSION_METHOD \

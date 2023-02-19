@@ -127,13 +127,11 @@ class EarlyFusion(BaseModel):
             if self.args.set_inf_label:
                 for ii in range(len(pred_inf["labels_3d"])):
                     pred_inf["labels_3d"][ii] = 2
-            Inf_points = filt_point_by_boxes(Inf_points, pred_inf, 2)
+            Inf_points = filt_point_by_boxes(Inf_points, pred_inf, 2,self.args.n)
             # outfile = '/workspace/demo.json'
             # print(id)
             # with open(outfile,'w') as f:
             #     json.dump(pred_inf,f,cls=NumpyEncoder)
-
-
 
 
         # 路端坐标转车端坐标

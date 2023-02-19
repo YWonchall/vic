@@ -30,6 +30,7 @@ superclass = {
 
 
 def add_arguments(parser): 
+    parser.add_argument("--n", type=float, default=1) # 过滤范围
     parser.add_argument("--input", type=str, default="")
     parser.add_argument("--output", type=str, default="")
     parser.add_argument("--test", action="store_true") # 仅推理
