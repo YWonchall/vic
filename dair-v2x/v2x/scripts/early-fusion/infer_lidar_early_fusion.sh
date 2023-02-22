@@ -3,13 +3,13 @@ OUTPUT="../work-dirs/filted-early-fusion/"
 rm -r ../cache
 rm -r $OUTPUT
 
-INFRA_MODEL_PATH="../configs/vic3d/filted-early-fusion/pointcloud/pointpillars"
+INFRA_MODEL_PATH="../configs/vic3d-report/early-fusion/pointpillars"
 INFRA_CONFIG_NAME="trainval_config_inf_1.py"
-INFRA_MODEL_NAME="pointpillars_inf_1_vic_inf.pth"
+INFRA_MODEL_NAME="pointpillars_inf.pth"
 # 3
-VEHICLE_MODEL_PATH="../configs/vic3d/filted-early-fusion/pointcloud/pointpillars"
+VEHICLE_MODEL_PATH="../configs/vic3d-report/early-fusion/pointpillars"
 VEHICLE_CONFIG_NAME="trainval_config_veh_1.py"
-VEHICLE_MODEL_NAME="pointpillars_veh_1_vic_coop.pth"
+VEHICLE_MODEL_NAME="pointpillars_veh.pth"
 # 4
 SPLIT_DATA_PATH="../data/split_datas/cooperative-split-data.json"
 
@@ -22,6 +22,7 @@ EXTEND_RANGE_END=100 #$5
 
 # 5 sensortype
 python infer.py \
+  --n 2 \
   --input $DATA \
   --output $OUTPUT \
   --model $FUSION_METHOD \

@@ -8,7 +8,7 @@ import random
 def box2info(boxes):
     num_boxes = boxes.shape[0]
     # 预测box中心
-    center = np.mean(boxes, axis=1)
+    # center = np.mean(boxes, axis=1)
     size = np.zeros((num_boxes, 3))
     size[:, 1] = (
         np.sum((boxes[:, 2, :] - boxes[:, 1, :]) ** 2, axis=1) ** 0.5
@@ -29,7 +29,7 @@ def box2info(boxes):
         - boxes[:, 7, :]
     )[:, 2] / 4
     # 长方体中心
-    # center = boxes[:,7] + (size/2)
+    center = boxes[:,7] + (size/2)
     return center, size
 
 
@@ -52,6 +52,7 @@ def concatenate_pcd2bin(pc1, pc2, path_save):
     np_y = np.append(np_y1, np_y2)
     np_z = np.append(np_z1, np_z2)
     np_i = np.append(np_i1, np_i2)
+
     points_32 = np.transpose(np.vstack((np_x, np_y, np_z, np_i)))
     list_pcd = []
     for i in range(len(points_32)):
@@ -73,6 +74,11 @@ def concatenate_pcd2bin(pc1, pc2, path_save):
     new_metadata["data"] = "binary"
     pc_save = pypcd.PointCloud(new_metadata, np_pcd)
     pc_save.save_pcd(path_save, compression="binary_compressed")
+    
+    pcd_array = pc_save.pc_data.view(np.float32).reshape(pc_save.pc_data.shape+(-1,))
+    point_cloud = o3d.geometry.PointCloud()
+    point_cloud.points = o3d.utility.Vector3dVector(pcd_array[:,:3])
+    o3d.io.write_point_cloud('/workspace/fusion.pcd',point_cloud)
 
 def get_filted_index(pointclouds, boxes, scores):
     # pointclouds: [N,4]
@@ -115,7 +121,7 @@ def get_filted_index2(pointclouds, boxes,scores,n):
     # centers = np.repeat(center.reshape(-1,1,3),8,axis=1)
     # boxes_dis = np.sum((centers-boxes)**2,axis=2)**0.5
     # boxes_dis = np.max(np.sum((centers-boxes)**2,axis=2)**0.5,axis=1) # N
-    filt_range = (size/2)*n
+    filt_range = (size/2)*1
     # for i in range(len(boxes)):
     #     trans = [boxes[i][7][0],boxes[i][7][1],boxes[i][7][2]]
     #     draw_mesh(size[i][0],size[i][1],size[i][2],trans,f'box_{i}.obj')
@@ -127,10 +133,10 @@ def get_filted_index2(pointclouds, boxes,scores,n):
         retain_ind = (dim_dis[:,0] < filt_range[i][0])*(dim_dis[:,1] < filt_range[i][1])*(dim_dis[:,2] < filt_range[i][2])
         retain_index += retain_ind
     return retain_index
-    # point_cloud = o3d.geometry.PointCloud()
-    # point_cloud.points = o3d.utility.Vector3dVector(points[retain_index])
-    # # print(np.asarray(point_cloud.points)[:10])
-    # o3d.io.write_point_cloud('./retain_final.pcd',point_cloud)
+    point_cloud = o3d.geometry.PointCloud()
+    point_cloud.points = o3d.utility.Vector3dVector(points[retain_index])
+    # print(np.asarray(point_cloud.points)[:10])
+    o3d.io.write_point_cloud('./retain_final.pcd',point_cloud)
 
 def draw_mesh(size,translate,filename):
   

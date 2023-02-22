@@ -5,7 +5,7 @@ import numpy as np
 import torch.nn as nn
 import logging
 import json
-
+import open3d as o3d
 logger = logging.getLogger(__name__)
 
 from base_model import BaseModel
@@ -110,7 +110,6 @@ class EarlyFusion(BaseModel):
         name = vic_frame.veh_frame["image_path"][-10:-4]
         Inf_points = read_pcd(osp.join(vic_frame.path, "infrastructure-side", vic_frame.inf_frame["pointcloud_path"]))
         Veh_points = read_pcd(osp.join(vic_frame.path, "vehicle-side", vic_frame.veh_frame["pointcloud_path"]))
-        
         
         
         # TODO

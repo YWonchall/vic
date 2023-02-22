@@ -1,5 +1,5 @@
 # 1
-DATA="../data/DAIR-V2X/cooperative-vehicle-infrastructure"
+DATA="../data/DAIR-V2X/cooperative-vehicle-infrastructure-example"
 OUTPUT="../cache/vic-early-lidar"
 rm -r $OUTPUT
 rm -r ../cache
@@ -12,7 +12,7 @@ VEHICLE_MODEL_PATH="../configs/vic3d-report/early-fusion/pointpillars"
 VEHICLE_CONFIG_NAME="trainval_config_veh_1.py"
 VEHICLE_MODEL_NAME="pointpillars_veh.pth"
 # 4
-SPLIT_DATA_PATH="../data/split_datas/cooperative-split-data.json"
+SPLIT_DATA_PATH="../data/split_datas/example-cooperative-split-data.json"
 
 # srun --gres=gpu:a100:1 --time=1-0:0:0 --job-name "dair-v2x" \
 CUDA_VISIBLE_DEVICES=0 #$1
@@ -23,7 +23,7 @@ EXTEND_RANGE_END=100 #$5
 # sensortype用于读取数据集
 # 5 sensortype
 python eval.py \
-  --n 8 \
+  --n 2 \
   --input $DATA \
   --output $OUTPUT \
   --model $FUSION_METHOD \

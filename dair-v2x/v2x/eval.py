@@ -47,6 +47,7 @@ def eval_vic(args, dataset, model, evaluator):
         # prev_inf_frame用于async的路端
         evaluator.add_frame(pred, label)
         pipe.flush()
+        break
         
     evaluator.print_ap("3d")
     evaluator.print_ap("bev")

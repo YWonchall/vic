@@ -6,6 +6,8 @@ import seaborn as sns
 from collections import defaultdict
 from matplotlib import pyplot as plt
 
+from matplotlib.pyplot import MultipleLocator
+
 
 def cal_train_time(log_dicts, args):
     for i, log_dict in enumerate(log_dicts):
@@ -39,8 +41,9 @@ def plot_curve(log_dicts, args):
     if legend is None:
         legend = []
         for json_log in args.json_logs:
-            for metric in args.keys:
-                legend.append(f'{json_log}_{metric}')
+            for metric in ['loss cls','loss bbox','loss']:#args.keys:
+                print(metric)
+                legend.append(f'{metric}')
     assert len(legend) == (len(args.json_logs) * len(args.keys))
     metrics = args.keys
 
@@ -96,17 +99,19 @@ def plot_curve(log_dicts, args):
                     ys.append(np.array(log_dict[epoch][metric][:len(iters)]))
                 xs = np.concatenate(xs)
                 ys = np.concatenate(ys)
-                plt.xlabel('iter')
+                plt.xticks([0,3000,6000,9000,12000],fontsize=15)
+                plt.yticks(fontsize=15)
+                plt.xlabel('iter',fontsize=15)
                 plt.plot(
                     xs, ys, label=legend[i * num_metrics + j], linewidth=0.5)
-            plt.legend()
+            plt.legend(fontsize=15)
         if args.title is not None:
             plt.title(args.title)
     if args.out is None:
         plt.show()
     else:
         print(f'save curve to: {args.out}')
-        plt.savefig(args.out)
+        plt.savefig(args.out,dpi=600,format='svg')
         plt.cla()
 
 

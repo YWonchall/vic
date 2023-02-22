@@ -168,7 +168,7 @@ python tools/train.py ../dair-v2x/configs/vic3d/late-fusion-multimodal/mvxnet/tr
 ## 4. 可视化训练log
 ```
 python tools/analysis_tools/analyze_logs.py plot_curve  \
-/workspace/vic-competition/mmdetection3d/work-dirs/vic/veh-coop-filted/train/pointpillars-car/20230207_194935.log.json \
+/workspace/inf_loss.json \
 --keys loss_cls loss_bbox  loss \
 --out losses.png
 ```
