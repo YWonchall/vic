@@ -71,8 +71,6 @@ class LateFusionInf(nn.Module):
         self.pipe = pipe
 
     def pred(self, frame, trans, pred_filter):
-        # 2.4
-        # 2-4
         if self.args.inf_sensortype == "lidar":
             id = frame.id["lidar"]
             logger.debug("infrastructure pointcloud_id: {}".format(id))
@@ -96,8 +94,7 @@ class LateFusionInf(nn.Module):
         logger.debug("prediction not found, predicting...")
         if self.model is None:
             raise Exception
-        # 2.5
-        # 2-5
+
         if self.args.inf_sensortype == "lidar":
             tmp = frame.point_cloud(data_format="file")
             result, _ = inference_detector(self.model, tmp)
@@ -109,7 +106,6 @@ class LateFusionInf(nn.Module):
             pcd_tmp = frame.point_cloud(data_format="file")
             img_tmp = osp.join(self.args.input, "infrastructure-side", frame["image_path"])
             annos = osp.join(self.args.input, "infrastructure-side", "annos", id + ".json")
-            # 2.6
             result, _ = inference_multi_modality_detector(self.model, pcd_tmp, img_tmp, annos)
             result = [result[0]['pts_bbox']]
             # result, _ = inference_mono_3d_detector(self.model, tmp, annos)
@@ -153,8 +149,6 @@ class LateFusionInf(nn.Module):
             save_data = frame.image(data_format="array")
         elif self.args.inf_sensortype == "multimodal" and self.args.save_multimodal:
             save_data = trans(frame.point_cloud(format="array"))
-            # save_image = frame.image(data_format="array")
-            # save_data = [save_point_cloud, save_image]
         else:
             save_data = np.array([])
 
@@ -167,13 +161,10 @@ class LateFusionInf(nn.Module):
             result[0]["scores_3d"].tolist(),
             result[0]["labels_3d"].tolist(),
         )
-        #save_pkl(pred_dict, path)
 
         return pred_dict, id
 
     def forward(self, data, trans, pred_filter, prev_inf_frame_func=None):
-        # 2.3
-        # data: inf_fram, trans: inf_lidar -> veh_lidar
         try:
             pred_dict, id = self.pred(data, trans, pred_filter)
         except Exception:
@@ -183,8 +174,6 @@ class LateFusionInf(nn.Module):
                 self.args.inf_model_path,
                 device=self.args.device,
             )
-            # 2.4
-            # 2-3
             pred_dict, id = self.pred(data, trans, pred_filter)
         if self.args.set_inf_label:
             for ii in range(len(pred_dict["labels_3d"])):
@@ -222,7 +211,6 @@ class LateFusionInf(nn.Module):
                 self.pipe.send("prev_boxes", pred_dict["boxes_3d"])
                 self.pipe.send("prev_time_diff", delta_t)
                 self.pipe.send("prev_label", pred_dict["labels_3d"])
-
         return id
 
 
@@ -312,8 +300,6 @@ class LateFusionVeh(nn.Module):
             save_data = frame.image(data_format="array")
         elif self.args.veh_sensortype == "multimodal" and self.args.save_multimodal:
             save_data = trans(frame.point_cloud(format="array"))
-            # save_image = frame.image(data_format="array")
-            # save_data = [save_point_cloud, save_image]
         else:
             save_data = np.array([])
 
@@ -326,7 +312,6 @@ class LateFusionVeh(nn.Module):
             result[0]["scores_3d"].tolist(),
             result[0]["labels_3d"].tolist(),
         )
-        # save_pkl(pred_dict, path)
 
         return pred_dict, id
 
@@ -374,8 +359,6 @@ class LateFusion(BaseModel):
         mkdir(osp.join(args.output, "result"))
 
     def forward(self, vic_frame, filt, prev_inf_frame_func=None, *args):
-        # 2.2
-        # 2-2
         id_inf = self.inf_model(
             vic_frame.infrastructure_frame(),
             vic_frame.transform(from_coord="Infrastructure_lidar", to_coord="Vehicle_lidar"),

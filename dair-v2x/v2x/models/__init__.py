@@ -11,6 +11,7 @@ SUPPROTED_MODELS = {
     "single_side": SingleSide,
     "late_fusion": LateFusion,
     "early_fusion": EarlyFusion,
+    "EFWF":EarlyFusionWithFilted,
     "veh_only": VehOnly,
     "inf_only": InfOnly,
 }

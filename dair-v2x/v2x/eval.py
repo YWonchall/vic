@@ -25,7 +25,6 @@ from models.model_utils import Channel
 def eval_vic(args, dataset, model, evaluator):
     idx = -1
     data_arr = []
-    # for VICFrame, label, filt in dataset:
     for VICFrame, label, filt in tqdm(dataset):
         idx += 1
         # if idx % 15 != 0:
@@ -34,16 +33,14 @@ def eval_vic(args, dataset, model, evaluator):
             veh_id = dataset.data[idx][0]["vehicle_pointcloud_path"].split("/")[-1].replace(".pcd", "")
         except Exception:
             veh_id = VICFrame["vehicle_pointcloud_path"].split("/")[-1].replace(".pcd", "")
-        # 2.1
         pred = model(
             VICFrame,
             filt,
             None if not hasattr(dataset, "prev_inf_frame") else dataset.prev_inf_frame,
         )
-        # if args.set_label:
-        #     # 单类推理开启
-        #     for ii in range(len(pred["labels_3d"])):
-        #         pred["labels_3d"][ii] = 2
+        # 单类推理开启
+        for ii in range(len(pred["labels_3d"])):
+            pred["labels_3d"][ii] = 2
         # prev_inf_frame用于async的路端
         evaluator.add_frame(pred, label)
         pipe.flush()
@@ -88,8 +85,6 @@ if __name__ == "__main__":
 
     extended_range = range2box(np.array(args.extended_range))
     logger.info("loading dataset")
-    # 1.1
-    # 1-1
     dataset = SUPPROTED_DATASETS[args.dataset](
         args.input,
         args,
@@ -110,7 +105,5 @@ if __name__ == "__main__":
         eval_single(args, dataset, model, evaluator)
     else:
         pipe = Channel()
-        # 融合相关代码
-        # 2-1
         model = SUPPROTED_MODELS[args.model](args, pipe)
         eval_vic(args, dataset, model, evaluator)
