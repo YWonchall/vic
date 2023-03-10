@@ -37,9 +37,9 @@ python tools/dataset_converter/dair2kitti.py --source-root ./data/DAIR-V2X/coope
     --split-path ./data/split_datas/cooperative-split-data.json \
     --label-type lidar --sensor-view infrastructure
 
-python tools/dataset_converter/dair2kitti.py --source-root ./data/DAIR-V2X/cooperative-vehicle-infrastructure/vehicle-side \
-    --target-root ./data/DAIR-V2X/cooperative-vehicle-infrastructure/vehicle-side \
-    --split-path ./data/split_datas/cooperative-split-data.json \
+python tools/dataset_converter/dair2kitti.py --source-root ./data/DAIR-V2X/cooperative-vehicle-infrastructure-example/vehicle-side \
+    --target-root ./data/DAIR-V2X/cooperative-vehicle-infrastructure-example/vehicle-side \
+    --split-path ./data/split_datas/example-cooperative-split-data.json \
     --label-type lidar --sensor-view vehicle
 ```
 
@@ -58,15 +58,15 @@ for file in *.jpg; do mv $file ${file%%.*}.png; done
 cd /workspace/vic-competition/mmdetection3d
 
 python tools/create_data.py kitti --root-path \
-/workspace/vic-competition/dair-v2x/data/DAIR-V2X/cooperative-vehicle-infrastructure/infrastructure-side \
+../dair-v2x/data/DAIR-V2X/cooperative-vehicle-infrastructure-example/infrastructure-side \
 --out-dir \
-/workspace/vic-competition/dair-v2x/data/DAIR-V2X/cooperative-vehicle-infrastructure/infrastructure-side \
+../dair-v2x/data/DAIR-V2X/cooperative-vehicle-infrastructure-example/infrastructure-side \
 --extra-tag kitti
 
 python tools/create_data.py kitti --root-path \
-/workspace/vic-competition/dair-v2x/data/DAIR-V2X/cooperative-vehicle-infrastructure/vehicle-side \
+../dair-v2x/data/DAIR-V2X/cooperative-vehicle-infrastructure-example/vehicle-side \
 --out-dir \
-/workspace/vic-competition/dair-v2x/data/DAIR-V2X/cooperative-vehicle-infrastructure/vehicle-side \
+../dair-v2x/data/DAIR-V2X/cooperative-vehicle-infrastructure-example/vehicle-side \
 --extra-tag kitti
 ```
 

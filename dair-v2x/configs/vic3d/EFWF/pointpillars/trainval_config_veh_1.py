@@ -1,5 +1,5 @@
 dataset_type = "KittiDataset"
-data_root = "/workspace/vic-competition/dair-v2x/data/DAIR-V2X/cooperative-vehicle-infrastructure/vic3d-early-fusion-training-all"
+data_root = "../dair-v2x/data/DAIR-V2X/cooperative-vehicle-infrastructure-example/vehicle-side"
 class_names = ["Car"]
 # point_cloud_range = [0, -39.68, -3, 100, 39.68, 1]
 point_cloud_range = [0, -39.68, -3, 92.16, 39.68, 1]
@@ -135,8 +135,8 @@ eval_pipeline = [
     dict(type="Collect3D", keys=["points"]),
 ]
 data = dict(
-    samples_per_gpu=8,
-    workers_per_gpu=8,
+    samples_per_gpu=2,
+    workers_per_gpu=2,
     train=dict(
         type="RepeatDataset",
         times=2,
@@ -265,7 +265,7 @@ optimizer = dict(type="AdamW", lr=0.001, betas=(0.95, 0.99), weight_decay=0.01)
 optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
 lr_config = dict(policy="cyclic", target_ratio=(5, 0.001), cyclic_times=1, step_ratio_up=0.3)
 momentum_config = dict(policy="cyclic", target_ratio=(0.8947368421052632, 1), cyclic_times=1, step_ratio_up=0.3)
-runner = dict(type="EpochBasedRunner", max_epochs=12)
+runner = dict(type="EpochBasedRunner", max_epochs=2)
 checkpoint_config = dict(interval=1)
 log_config = dict(interval=10, hooks=[dict(type="TextLoggerHook"), dict(type="TensorboardLoggerHook")])
 dist_params = dict(backend="nccl")
