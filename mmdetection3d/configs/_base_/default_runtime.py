@@ -12,7 +12,12 @@ log_config = dict(
 # yapf:enable
 dist_params = dict(backend='nccl')
 log_level = 'INFO'
-work_dir = '/workspace/vic-competition/mmdetection3d/work-dirs/exam-c/veh-car/train/'
-load_from = "/workspace/vic-competition/mmdetection3d/checkpoints/hv_PartA2_secfpn_2x8_cyclic_80e_kitti-3d-car_20210831_022017-cb7ff621.pth"
-resume_from = None# "/workspace/vic-competition/dair-v2x/configs/vic3d/late-fusion-pointcloud/pointpillars/vic3d_latefusion_inf_pointpillars_596784ad6127866fcfb286301757c949.pth"
+work_dir = None
+load_from = None
+resume_from = None
 workflow = [('train', 1)]
+
+# disable opencv multithreading to avoid system being overloaded
+opencv_num_threads = 0
+# set multi-process start method as `fork` to speed up the training
+mp_start_method = 'fork'

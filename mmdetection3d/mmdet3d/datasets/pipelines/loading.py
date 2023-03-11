@@ -3,8 +3,8 @@ import mmcv
 import numpy as np
 
 from mmdet3d.core.points import BasePoints, get_points_type
-from mmdet.datasets.builder import PIPELINES
 from mmdet.datasets.pipelines import LoadAnnotations, LoadImageFromFile
+from ..builder import PIPELINES
 
 
 @PIPELINES.register_module()
@@ -14,9 +14,10 @@ class LoadMultiViewImageFromFiles(object):
     Expects results['img_filename'] to be a list of filenames.
 
     Args:
-        to_float32 (bool): Whether to convert the img to float32.
+        to_float32 (bool, optional): Whether to convert the img to float32.
             Defaults to False.
-        color_type (str): Color type of the file. Defaults to 'unchanged'.
+        color_type (str, optional): Color type of the file.
+            Defaults to 'unchanged'.
     """
 
     def __init__(self, to_float32=False, color_type='unchanged'):
@@ -30,7 +31,7 @@ class LoadMultiViewImageFromFiles(object):
             results (dict): Result dict containing multi-view image filenames.
 
         Returns:
-            dict: The result dict containing the multi-view image data. \
+            dict: The result dict containing the multi-view image data.
                 Added keys and values are described below.
 
                 - filename (str): Multi-view image filenames.
@@ -48,7 +49,7 @@ class LoadMultiViewImageFromFiles(object):
         if self.to_float32:
             img = img.astype(np.float32)
         results['filename'] = filename
-        # unravel to list, see `DefaultFormatBundle` in formating.py
+        # unravel to list, see `DefaultFormatBundle` in formatting.py
         # which will transpose each image separately and then stack into array
         results['img'] = [img[..., i] for i in range(img.shape[-1])]
         results['img_shape'] = img.shape
@@ -77,7 +78,7 @@ class LoadImageFromFileMono3D(LoadImageFromFile):
     detection, additional camera parameters need to be loaded.
 
     Args:
-        kwargs (dict): Arguments are the same as those in \
+        kwargs (dict): Arguments are the same as those in
             :class:`LoadImageFromFile`.
     """
 
@@ -102,17 +103,22 @@ class LoadPointsFromMultiSweeps(object):
     This is usually used for nuScenes dataset to utilize previous sweeps.
 
     Args:
-        sweeps_num (int): Number of sweeps. Defaults to 10.
-        load_dim (int): Dimension number of the loaded points. Defaults to 5.
-        use_dim (list[int]): Which dimension to use. Defaults to [0, 1, 2, 4].
-        file_client_args (dict): Config dict of file clients, refer to
+        sweeps_num (int, optional): Number of sweeps. Defaults to 10.
+        load_dim (int, optional): Dimension number of the loaded points.
+            Defaults to 5.
+        use_dim (list[int], optional): Which dimension to use.
+            Defaults to [0, 1, 2, 4].
+        time_dim (int, optional): Which dimension to represent the timestamps
+            of each points. Defaults to 4.
+        file_client_args (dict, optional): Config dict of file clients,
+            refer to
             https://github.com/open-mmlab/mmcv/blob/master/mmcv/fileio/file_client.py
             for more details. Defaults to dict(backend='disk').
-        pad_empty_sweeps (bool): Whether to repeat keyframe when
+        pad_empty_sweeps (bool, optional): Whether to repeat keyframe when
             sweeps is empty. Defaults to False.
-        remove_close (bool): Whether to remove close points.
+        remove_close (bool, optional): Whether to remove close points.
             Defaults to False.
-        test_mode (bool): If test_model=True used for testing, it will not
+        test_mode (bool, optional): If `test_mode=True`, it will not
             randomly sample sweeps but select the nearest N frames.
             Defaults to False.
     """
@@ -121,6 +127,7 @@ class LoadPointsFromMultiSweeps(object):
                  sweeps_num=10,
                  load_dim=5,
                  use_dim=[0, 1, 2, 4],
+                 time_dim=4,
                  file_client_args=dict(backend='disk'),
                  pad_empty_sweeps=False,
                  remove_close=False,
@@ -128,11 +135,16 @@ class LoadPointsFromMultiSweeps(object):
         self.load_dim = load_dim
         self.sweeps_num = sweeps_num
         self.use_dim = use_dim
+        self.time_dim = time_dim
+        assert time_dim < load_dim, \
+            f'Expect the timestamp dimension < {load_dim}, got {time_dim}'
         self.file_client_args = file_client_args.copy()
         self.file_client = None
         self.pad_empty_sweeps = pad_empty_sweeps
         self.remove_close = remove_close
         self.test_mode = test_mode
+        assert max(use_dim) < load_dim, \
+            f'Expect all used dimensions < {load_dim}, got {use_dim}'
 
     def _load_points(self, pts_filename):
         """Private function to load point clouds data.
@@ -161,7 +173,7 @@ class LoadPointsFromMultiSweeps(object):
 
         Args:
             points (np.ndarray | :obj:`BasePoints`): Sweep points.
-            radius (float): Radius below which points are removed.
+            radius (float, optional): Radius below which points are removed.
                 Defaults to 1.0.
 
         Returns:
@@ -182,18 +194,18 @@ class LoadPointsFromMultiSweeps(object):
         """Call function to load multi-sweep point clouds from files.
 
         Args:
-            results (dict): Result dict containing multi-sweep point cloud \
+            results (dict): Result dict containing multi-sweep point cloud
                 filenames.
 
         Returns:
-            dict: The result dict containing the multi-sweep points data. \
+            dict: The result dict containing the multi-sweep points data.
                 Added key and value are described below.
 
-                - points (np.ndarray | :obj:`BasePoints`): Multi-sweep point \
+                - points (np.ndarray | :obj:`BasePoints`): Multi-sweep point
                     cloud arrays.
         """
         points = results['points']
-        points.tensor[:, 4] = 0
+        points.tensor[:, self.time_dim] = 0
         sweep_points_list = [points]
         ts = results['timestamp']
         if self.pad_empty_sweeps and len(results['sweeps']) == 0:
@@ -220,7 +232,7 @@ class LoadPointsFromMultiSweeps(object):
                 points_sweep[:, :3] = points_sweep[:, :3] @ sweep[
                     'sensor2lidar_rotation'].T
                 points_sweep[:, :3] += sweep['sensor2lidar_translation']
-                points_sweep[:, 4] = ts - sweep_ts
+                points_sweep[:, self.time_dim] = ts - sweep_ts
                 points_sweep = points.new_point(points_sweep)
                 sweep_points_list.append(points_sweep)
 
@@ -243,8 +255,8 @@ class PointSegClassMapping(object):
 
     Args:
         valid_cat_ids (tuple[int]): A tuple of valid category.
-        max_cat_id (int): The max possible cat_id in input segmentation mask.
-            Defaults to 40.
+        max_cat_id (int, optional): The max possible cat_id in input
+            segmentation mask. Defaults to 40.
     """
 
     def __init__(self, valid_cat_ids, max_cat_id=40):
@@ -268,7 +280,7 @@ class PointSegClassMapping(object):
             results (dict): Result dict containing point semantic masks.
 
         Returns:
-            dict: The result dict containing the mapped category ids. \
+            dict: The result dict containing the mapped category ids.
                 Updated key and value are described below.
 
                 - pts_semantic_mask (np.ndarray): Mapped semantic masks.
@@ -307,7 +319,7 @@ class NormalizePointsColor(object):
             results (dict): Result dict containing point clouds data.
 
         Returns:
-            dict: The result dict containing the normalized points. \
+            dict: The result dict containing the normalized points.
                 Updated key and value are described below.
 
                 - points (:obj:`BasePoints`): Points after color normalization.
@@ -334,7 +346,7 @@ class NormalizePointsColor(object):
 class LoadPointsFromFile(object):
     """Load Points From File.
 
-    Load sunrgbd and scannet points from file.
+    Load points from file.
 
     Args:
         coord_type (str): The type of coordinates of points cloud.
@@ -342,14 +354,17 @@ class LoadPointsFromFile(object):
             - 'LIDAR': Points in LiDAR coordinates.
             - 'DEPTH': Points in depth coordinates, usually for indoor dataset.
             - 'CAMERA': Points in camera coordinates.
-        load_dim (int): The dimension of the loaded points.
+        load_dim (int, optional): The dimension of the loaded points.
             Defaults to 6.
-        use_dim (list[int]): Which dimensions of the points to be used.
+        use_dim (list[int], optional): Which dimensions of the points to use.
             Defaults to [0, 1, 2]. For KITTI dataset, set use_dim=4
             or use_dim=[0, 1, 2, 3] to use the intensity dimension.
-        shift_height (bool): Whether to use shifted height. Defaults to False.
-        use_color (bool): Whether to use color features. Defaults to False.
-        file_client_args (dict): Config dict of file clients, refer to
+        shift_height (bool, optional): Whether to use shifted height.
+            Defaults to False.
+        use_color (bool, optional): Whether to use color features.
+            Defaults to False.
+        file_client_args (dict, optional): Config dict of file clients,
+            refer to
             https://github.com/open-mmlab/mmcv/blob/master/mmcv/fileio/file_client.py
             for more details. Defaults to dict(backend='disk').
     """
@@ -405,7 +420,7 @@ class LoadPointsFromFile(object):
             results (dict): Result dict containing point clouds data.
 
         Returns:
-            dict: The result dict containing the point clouds data. \
+            dict: The result dict containing the point clouds data.
                 Added key and value are described below.
 
                 - points (:obj:`BasePoints`): Point clouds data.
@@ -451,6 +466,15 @@ class LoadPointsFromFile(object):
         repr_str += f'load_dim={self.load_dim}, '
         repr_str += f'use_dim={self.use_dim})'
         return repr_str
+
+
+@PIPELINES.register_module()
+class LoadPointsFromDict(LoadPointsFromFile):
+    """Load Points From Dict."""
+
+    def __call__(self, results):
+        assert 'points' in results
+        return results
 
 
 @PIPELINES.register_module()
@@ -502,7 +526,7 @@ class LoadAnnotations3D(LoadAnnotations):
                  with_seg=False,
                  with_bbox_depth=False,
                  poly2mask=True,
-                 seg_3d_dtype='int',
+                 seg_3d_dtype=np.int64,
                  file_client_args=dict(backend='disk')):
         super().__init__(
             with_bbox,
@@ -584,11 +608,11 @@ class LoadAnnotations3D(LoadAnnotations):
             self.file_client = mmcv.FileClient(**self.file_client_args)
         try:
             mask_bytes = self.file_client.get(pts_instance_mask_path)
-            pts_instance_mask = np.frombuffer(mask_bytes, dtype=np.int)
+            pts_instance_mask = np.frombuffer(mask_bytes, dtype=np.int64)
         except ConnectionError:
             mmcv.check_file_exist(pts_instance_mask_path)
             pts_instance_mask = np.fromfile(
-                pts_instance_mask_path, dtype=np.long)
+                pts_instance_mask_path, dtype=np.int64)
 
         results['pts_instance_mask'] = pts_instance_mask
         results['pts_mask_fields'].append('pts_instance_mask')
@@ -615,7 +639,7 @@ class LoadAnnotations3D(LoadAnnotations):
         except ConnectionError:
             mmcv.check_file_exist(pts_semantic_mask_path)
             pts_semantic_mask = np.fromfile(
-                pts_semantic_mask_path, dtype=np.long)
+                pts_semantic_mask_path, dtype=np.int64)
 
         results['pts_semantic_mask'] = pts_semantic_mask
         results['pts_seg_fields'].append('pts_semantic_mask')

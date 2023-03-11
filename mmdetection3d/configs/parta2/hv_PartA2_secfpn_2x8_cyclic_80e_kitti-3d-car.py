@@ -10,7 +10,7 @@ model = dict(
             _delete_=True,
             type='Anchor3DRangeGenerator',
             ranges=[[0, -40.0, -1.78, 70.4, 40.0, -1.78]],
-            sizes=[[1.6, 3.9, 1.56]],
+            sizes=[[3.9, 1.6, 1.56]],
             rotations=[0, 1.57],
             reshape_out=False)),
     roi_head=dict(
@@ -73,7 +73,7 @@ model = dict(
 
 # dataset settings
 dataset_type = 'KittiDataset'
-data_root = '/workspace/vic-competition/dair-v2x/data/DAIR-V2X/cooperative-vehicle-infrastructure/vehicle-side/'
+data_root = 'data/kitti/'
 class_names = ['Car']
 input_modality = dict(use_lidar=True, use_camera=False)
 db_sampler = dict(

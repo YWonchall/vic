@@ -1,12 +1,11 @@
 # Copyright (c) OpenMMLab. All rights reserved.
 import argparse
 import json
+from collections import defaultdict
+
 import numpy as np
 import seaborn as sns
-from collections import defaultdict
 from matplotlib import pyplot as plt
-
-from matplotlib.pyplot import MultipleLocator
 
 
 def cal_train_time(log_dicts, args):
@@ -41,14 +40,12 @@ def plot_curve(log_dicts, args):
     if legend is None:
         legend = []
         for json_log in args.json_logs:
-            for metric in ['loss cls','loss bbox','loss']:#args.keys:
-                print(metric)
-                legend.append(f'{metric}')
+            for metric in args.keys:
+                legend.append(f'{json_log}_{metric}')
     assert len(legend) == (len(args.json_logs) * len(args.keys))
     metrics = args.keys
 
     num_metrics = len(metrics)
-    print(num_metrics)
     for i, log_dict in enumerate(log_dicts):
         epochs = list(log_dict.keys())
         for j, metric in enumerate(metrics):
@@ -99,19 +96,17 @@ def plot_curve(log_dicts, args):
                     ys.append(np.array(log_dict[epoch][metric][:len(iters)]))
                 xs = np.concatenate(xs)
                 ys = np.concatenate(ys)
-                plt.xticks([0,3000,6000,9000,12000],fontsize=15)
-                plt.yticks(fontsize=15)
-                plt.xlabel('iter',fontsize=15)
+                plt.xlabel('iter')
                 plt.plot(
                     xs, ys, label=legend[i * num_metrics + j], linewidth=0.5)
-            plt.legend(fontsize=15)
+            plt.legend()
         if args.title is not None:
             plt.title(args.title)
     if args.out is None:
         plt.show()
     else:
         print(f'save curve to: {args.out}')
-        plt.savefig(args.out,dpi=600,format='svg')
+        plt.savefig(args.out)
         plt.cla()
 
 

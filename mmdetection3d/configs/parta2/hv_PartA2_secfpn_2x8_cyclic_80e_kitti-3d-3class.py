@@ -7,7 +7,7 @@ point_cloud_range = [0, -40, -3, 70.4, 40, 1]
 
 # dataset settings
 dataset_type = 'KittiDataset'
-data_root = '/workspace/vic-competition/dair-v2x/data/DAIR-V2X/cooperative-vehicle-infrastructure/vehicle-side/'
+data_root = 'data/kitti/'
 class_names = ['Pedestrian', 'Cyclist', 'Car']
 input_modality = dict(use_lidar=True, use_camera=False)
 db_sampler = dict(
@@ -76,8 +76,8 @@ eval_pipeline = [
 ]
 
 data = dict(
-    samples_per_gpu=1,
-    workers_per_gpu=1,
+    samples_per_gpu=2,
+    workers_per_gpu=2,
     train=dict(
         type='RepeatDataset',
         times=2,
@@ -90,6 +90,7 @@ data = dict(
             pipeline=train_pipeline,
             modality=input_modality,
             classes=class_names,
+            box_type_3d='LiDAR',
             test_mode=False)),
     val=dict(
         type=dataset_type,
@@ -100,6 +101,7 @@ data = dict(
         pipeline=test_pipeline,
         modality=input_modality,
         classes=class_names,
+        box_type_3d='LiDAR',
         test_mode=True),
     test=dict(
         type=dataset_type,
@@ -110,6 +112,7 @@ data = dict(
         pipeline=test_pipeline,
         modality=input_modality,
         classes=class_names,
+        box_type_3d='LiDAR',
         test_mode=True))
 
 # Part-A2 uses a different learning rate from what SECOND uses.

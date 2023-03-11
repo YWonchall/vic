@@ -1,7 +1,8 @@
 # Copyright (c) OpenMMLab. All rights reserved.
+import os
+
 import mmcv
 import numpy as np
-import os
 
 from tools.data_converter.s3dis_data_utils import S3DISData, S3DISSegData
 from tools.data_converter.scannet_data_utils import ScanNetData, ScanNetSegData
@@ -11,18 +12,20 @@ from tools.data_converter.sunrgbd_data_utils import SUNRGBDData
 def create_indoor_info_file(data_path,
                             pkl_prefix='sunrgbd',
                             save_path=None,
-                            use_v1=False,
-                            workers=4):
+                            workers=4,
+                            **kwargs):
     """Create indoor information file.
 
     Get information of the raw data and save it to the pkl file.
 
     Args:
         data_path (str): Path of the data.
-        pkl_prefix (str): Prefix of the pkl to be saved. Default: 'sunrgbd'.
-        save_path (str): Path of the pkl to be saved. Default: None.
-        use_v1 (bool): Whether to use v1. Default: False.
-        workers (int): Number of threads to be used. Default: 4.
+        pkl_prefix (str, optional): Prefix of the pkl to be saved.
+            Default: 'sunrgbd'.
+        save_path (str, optional): Path of the pkl to be saved. Default: None.
+        workers (int, optional): Number of threads to be used. Default: 4.
+        kwargs (dict): Additional parameters for dataset-specific Data class.
+            May include `use_v1` for SUN RGB-D and `num_points`.
     """
     assert os.path.exists(data_path)
     assert pkl_prefix in ['sunrgbd', 'scannet', 's3dis'], \
@@ -37,10 +40,18 @@ def create_indoor_info_file(data_path,
         val_filename = os.path.join(save_path, f'{pkl_prefix}_infos_val.pkl')
         if pkl_prefix == 'sunrgbd':
             # SUN RGB-D has a train-val split
+            num_points = kwargs.get('num_points', -1)
+            use_v1 = kwargs.get('use_v1', False)
             train_dataset = SUNRGBDData(
-                root_path=data_path, split='train', use_v1=use_v1)
+                root_path=data_path,
+                split='train',
+                use_v1=use_v1,
+                num_points=num_points)
             val_dataset = SUNRGBDData(
-                root_path=data_path, split='val', use_v1=use_v1)
+                root_path=data_path,
+                split='val',
+                use_v1=use_v1,
+                num_points=num_points)
         else:
             # ScanNet has a train-val-test split
             train_dataset = ScanNetData(root_path=data_path, split='train')
@@ -71,18 +82,19 @@ def create_indoor_info_file(data_path,
     if pkl_prefix == 'scannet':
         # label weight computation function is adopted from
         # https://github.com/charlesq34/pointnet2/blob/master/scannet/scannet_dataset.py#L24
+        num_points = kwargs.get('num_points', 8192)
         train_dataset = ScanNetSegData(
             data_root=data_path,
             ann_file=train_filename,
             split='train',
-            num_points=8192,
+            num_points=num_points,
             label_weight_func=lambda x: 1.0 / np.log(1.2 + x))
         # TODO: do we need to generate on val set?
         val_dataset = ScanNetSegData(
             data_root=data_path,
             ann_file=val_filename,
             split='val',
-            num_points=8192,
+            num_points=num_points,
             label_weight_func=lambda x: 1.0 / np.log(1.2 + x))
         # no need to generate for test set
         train_dataset.get_seg_infos()
@@ -99,10 +111,11 @@ def create_indoor_info_file(data_path,
                                     f'{pkl_prefix}_infos_{split}.pkl')
             mmcv.dump(info, filename, 'pkl')
             print(f'{pkl_prefix} info {split} file is saved to {filename}')
+            num_points = kwargs.get('num_points', 4096)
             seg_dataset = S3DISSegData(
                 data_root=data_path,
                 ann_file=filename,
                 split=split,
-                num_points=4096,
+                num_points=num_points,
                 label_weight_func=lambda x: 1.0 / np.log(1.2 + x))
             seg_dataset.get_seg_infos()
