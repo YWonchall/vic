@@ -10,3 +10,5 @@ python setup.py install
 cd ..
 pip install seaborn
 pip install open3d==0.11.1
+pip uninstall setuptools -y
+pip install setuptools==52.0.0
